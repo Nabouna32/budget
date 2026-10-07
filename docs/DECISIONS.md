@@ -397,8 +397,12 @@ Le `POST` pour le pull permet un payload structuré. La portée `(user_id, mutat
 
 Decision recorded during Step 7F.
 
-- Driver retenu : PostgreSQL driver avec SQL explicite.
-- Migrations : Supabase CLI dans supabase/migrations/.
+- Driver retenu : `pg` (node-postgres) avec SQL explicite, sans ORM.
+- Connexion Vercel : Supavisor Transaction Pooler.
+- Pool applicatif : `max: 1` connexion par instance, avec timeouts de connexion et d'inactivité.
+- Configuration : `DATABASE_URL`, uniquement côté backend.
+- Migrations : Supabase CLI dans `supabase/migrations/`.
+- Aucun prepared statement nommé n'est utilisé.
 
 
 ---
@@ -443,6 +447,48 @@ Les UUID permettent la création offline sans dépendance à une séquence serve
 - Les règles métier complexes restent dans Fastify ou feront l'objet de décisions SQL dédiées.
 - Les rôles PostgreSQL, le pooling runtime et les politiques RLS détaillées restent ouverts.
 - La migration est versionnée mais son application distante est vérifiée séparément.
+
+### Statut
+
+**Validée.**
+
+
+---
+
+## 2026-10-07 — Connexion PostgreSQL runtime V1
+
+### Décision
+
+Le backend Fastify utilise **`pg` (node-postgres)** avec SQL explicite, sans ORM. La connexion runtime utilise `DATABASE_URL` et cible le **Supavisor Transaction Pooler** de Supabase.
+
+Le pool est limité à une connexion maximale par instance Vercel (`max: 1`). Les timeouts de connexion et d'inactivité sont bornés. Les requêtes restent paramétrées et les transactions PostgreSQL restent disponibles pour les opérations atomiques de synchronisation.
+
+Le rôle PostgreSQL dédié à privilèges minimaux n'est pas introduit dans cette étape et reste une décision de sécurité séparée.
+
+### Contexte
+
+L'exécution sur Vercel est stateless et peut multiplier les instances. Le protocole de synchronisation dépend de transactions PostgreSQL atomiques et ne doit pas introduire une couche de pooling ou de driver incompatible avec ces garanties.
+
+### Alternatives considérées
+
+- `postgres.js` avec Supavisor Transaction Pooler ;
+- `pg` (node-postgres) avec SQL explicite ;
+- ORM ;
+- connexion PostgreSQL directe persistante depuis le backend serverless.
+
+### Raisons
+
+Supavisor Transaction Pooler est adapté aux connexions serverless et évite de créer une connexion directe persistante par instance. `pg` évite le problème de pipelining de `postgres.js` avec le pooler transactionnel partagé, qui peut provoquer des blocages ou des résultats associés à la mauvaise requête. Ce risque est incompatible avec la criticité des transactions atomiques de synchronisation.
+
+`pg` conserve une API transactionnelle PostgreSQL classique et l'accès SQL explicite déjà retenu pour le schéma et le protocole de synchronisation. L'absence d'ORM évite une abstraction supplémentaire sur les mécanismes critiques de versionnement, d'idempotence et de journalisation.
+
+### Conséquences
+
+- `DATABASE_URL` est un secret backend et ne doit jamais être exposé au client.
+- Le pool est local à l'instance et ne porte aucun état métier persistant.
+- Les futurs repositories doivent réutiliser cette infrastructure plutôt que créer leurs propres pools.
+- La mise en place d'un rôle DB dédié à privilèges minimaux reste à traiter séparément.
+- L'application et la vérification de la migration distante restent hors de cette étape et relèvent de 7F.5.
 
 ### Statut
 
