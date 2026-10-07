@@ -185,9 +185,8 @@ Les logs de développement ne doivent pas permettre de reconstruire la situation
 
 ## Non décidé
 
-- taxonomie définitive des politiques de visibilité ;
-- rôles et permissions détaillés ;
-- règles de visibilité par type d'entité ;
+- règles de visibilité détaillées par type d'entité ;
+- gestion des agrégats sensibles ;
 - gestion des agrégats sensibles ;
 - politique de rétention ;
 - analytics éventuels ;
