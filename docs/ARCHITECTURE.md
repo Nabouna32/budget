@@ -255,4 +255,12 @@ Ne sont pas verrouillés par cette architecture :
 
 ## PostgreSQL runtime
 
-Le backend utilisera un driver PostgreSQL avec SQL explicite. Les migrations sont versionnées dans supabase/migrations/ avec le Supabase CLI. Le détail de la connexion runtime sera défini lors de l'implémentation de l'accès PostgreSQL.
+Le backend utilise **`pg` (node-postgres)** avec SQL explicite, sans ORM. Les migrations sont versionnées dans `supabase/migrations/` avec le Supabase CLI.
+
+La connexion runtime utilise `DATABASE_URL` et doit cibler le **Supavisor Transaction Pooler** de Supabase pour les Functions Vercel. Le pool est limité à `max: 1` connexion par instance, avec timeouts de connexion et d'inactivité adaptés à l'exécution serverless.
+
+Aucun état métier ne dépend du pool ou de la mémoire de l'instance. Les requêtes restent paramétrées et les transactions PostgreSQL restent disponibles pour les opérations atomiques du protocole de synchronisation.
+
+`pg` a été retenu à la place de `postgres.js` après vérification de compatibilité : Postgres.js pipeline les requêtes par défaut et cette combinaison avec Supavisor Transaction Pooler peut provoquer des blocages ou des résultats associés à la mauvaise requête. Ce risque n'est pas acceptable pour les transactions atomiques de synchronisation V1.
+
+Le rôle PostgreSQL dédié à privilèges minimaux reste une évolution séparée ; V1 conserve le backend comme frontière d'autorisation et le secret de connexion uniquement côté serveur.
