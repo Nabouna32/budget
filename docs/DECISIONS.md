@@ -669,3 +669,45 @@ Le modèle retenu conserve donc une autorisation en couches. Chaque couche peut 
 ### Statut
 
 **Validée et documentée.**
+
+
+---
+
+## 2026-10-07 — Vérification des JWT Supabase côté backend
+
+### Décision
+
+Le backend Fastify vérifie les jetons d'accès Supabase avec **`@supabase/supabase-js`** et **`auth.getClaims()`**.
+
+Le client Supabase serveur est configuré avec :
+
+- `SUPABASE_URL` ;
+- `SUPABASE_PUBLISHABLE_KEY` ;
+- `autoRefreshToken: false` ;
+- `persistSession: false` ;
+- `detectSessionInUrl: false`.
+
+Les routes protégées utilisent le hook d'authentification Fastify. Le hook extrait uniquement un jeton au format `Authorization: Bearer <JWT>`, demande à Supabase de vérifier le jeton, puis place dans le contexte de requête l'identité minimale nécessaire : `sub` et, lorsqu'il est présent, `session_id`.
+
+Les erreurs d'authentification retournent une réponse HTTP 401 générique sans révéler la cause précise de l'échec. Aucun jeton, identifiant financier ou détail du JWT n'est journalisé.
+
+### Challenge
+
+Deux alternatives ont été considérées :
+
+- appeler systématiquement l'endpoint utilisateur Supabase avec `getUser(jwt)`, qui force une requête réseau vers Auth à chaque vérification ;
+- implémenter directement la vérification JWT et la récupération/cache JWKS dans le backend.
+
+Le choix `getClaims()` est retenu : Supabase fournit déjà la vérification adaptée à ses JWT et peut vérifier localement les signatures asymétriques via les JWKS lorsque le projet utilise ces clés, tout en conservant un chemin compatible avec les clés symétriques. Cela évite de réimplémenter la cryptographie et le cycle de rotation des clés dans Budget.
+
+### Conséquences
+
+- le backend ne stocke pas de session Supabase et ne tente pas de renouveler les tokens ;
+- aucune clé `service_role` ou secret de signature JWT n'est nécessaire pour cette vérification ;
+- la clé publishable est une configuration nécessaire au client serveur mais ne doit pas être confondue avec un secret ;
+- le cycle de vie des sessions côté client reste à définir et est suivi par l'Issue #15 ;
+- les règles d'autorisation par opération restent séparées de l'authentification et seront appliquées après identification de l'utilisateur.
+
+### Statut
+
+**Validée et implémentée dans la branche 7J.**
