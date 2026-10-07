@@ -31,7 +31,7 @@ function sendUnauthorized(reply: FastifyReply): void {
 export function createAuthenticationHook(
   verifier?: AccessTokenVerifier,
 ): onRequestHookHandler {
-  const authVerifier = verifier ?? createSupabaseAuthVerifier();
+  let authVerifier = verifier;
 
   return async function authenticateRequest(
     request: FastifyRequest,
@@ -42,6 +42,8 @@ export function createAuthenticationHook(
       sendUnauthorized(reply);
       return;
     }
+
+    authVerifier ??= createSupabaseAuthVerifier();
 
     try {
       const identity: AuthenticatedIdentity = await authVerifier.verify(token);
