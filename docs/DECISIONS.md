@@ -399,3 +399,51 @@ Decision recorded during Step 7F.
 
 - Driver retenu : PostgreSQL driver avec SQL explicite.
 - Migrations : Supabase CLI dans supabase/migrations/.
+
+
+---
+
+## 2026-10-07 — Schéma PostgreSQL physique V1
+
+### Décision
+
+Le schéma PostgreSQL V1 est versionné dans `supabase/migrations/` et utilise :
+
+- des UUID générables côté client pour les entités synchronisables ;
+- des `BIGINT` pour les montants en minor units ;
+- `CHAR(3)` pour les codes devise avec validation syntaxique minimale ;
+- `timestamptz` pour les timestamps techniques et `date` pour les dates métier ;
+- une version `BIGINT` par entité ;
+- une révision serveur monotone portée par `change_journal` ;
+- une table `mutation_results` indexée par `(user_id, mutation_id)` ;
+- des tombstones séparés du modèle métier ;
+- des clés étrangères composites pour garantir la cohérence d'espace des sélections de comptes par budget.
+
+Les tables du schéma `public` ont RLS activé comme défense en profondeur. L'autorisation métier reste portée par Fastify et aucune politique RLS client n'est figée à ce stade.
+
+### Contexte
+
+Le protocole offline-first nécessite des identifiants générables côté client, une version par entité, une révision serveur globale, des tombstones et une idempotence persistante. Le modèle métier nécessite également une intégrité relationnelle forte.
+
+### Alternatives considérées
+
+- identifiants générés uniquement par PostgreSQL ;
+- `NUMERIC` pour les montants ;
+- suppression logique directement dans chaque table métier ;
+- contrôle exclusif côté backend des relations inter-espaces ;
+- RLS comme mécanisme principal d'autorisation métier.
+
+### Raisons
+
+Les UUID permettent la création offline sans dépendance à une séquence serveur. Les minor units en BIGINT restent exactes et correspondent au modèle métier validé. Les tombstones séparés évitent de confondre état métier et infrastructure de synchronisation. Les FK composites déplacent une contrainte structurante importante dans PostgreSQL. RLS fournit une défense en profondeur sans créer deux systèmes concurrents d'autorisation métier.
+
+### Conséquences
+
+- La migration initiale doit rester synchronisable avec le protocole V1.
+- Les règles métier complexes restent dans Fastify ou feront l'objet de décisions SQL dédiées.
+- Les rôles PostgreSQL, le pooling runtime et les politiques RLS détaillées restent ouverts.
+- La migration est versionnée mais son application distante est vérifiée séparément.
+
+### Statut
+
+**Validée.**
