@@ -82,7 +82,7 @@ Les environnements de développement et de production doivent séparer leurs sec
 
 ## Base de données et défense en profondeur
 
-La migration PostgreSQL V1 active RLS sur les tables métier et de synchronisation. Cette mesure ne remplace pas l'autorisation Fastify : elle évite qu'une exposition accidentelle aux rôles clients transforme le schéma en voie d'accès aux données. Les politiques RLS applicatives ne seront ajoutées qu'après décision explicite du modèle d'autorisation.
+La migration PostgreSQL V1 active RLS sur les tables métier et de synchronisation. Cette mesure ne remplace pas l'autorisation Fastify : elle évite qu'une exposition accidentelle aux rôles clients transforme le schéma en voie d'accès aux données. Le modèle d'autorisation métier est désormais défini côté Fastify ; aucune politique RLS client supplémentaire n'est ajoutée à ce stade.
 
 ## Non décidé
 
