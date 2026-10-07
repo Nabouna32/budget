@@ -185,7 +185,23 @@ Les opérations locales non confirmées sont conservées dans une file persistan
 
 Le client envoie des lots de mutations à l'opération de **push** du protocole.
 
-Le chemin HTTP exact et le format du transport restent à définir dans le contrat API.
+Le contrat HTTP est défini par le Sync API V1 : le push utilise `POST /sync/push`.
+
+Une mutation porte au minimum :
+
+```json
+{
+  "mutation_id": "...",
+  "operation": "UPDATE_TRANSACTION",
+  "entity_id": "...",
+  "base_version": 7,
+  "payload": {}
+}
+```
+
+L'idempotence est scoped par le couple `(user_id, mutation_id)`. Le serveur doit conserver le résultat de la mutation de manière durable afin qu'un retry après perte de réponse ne réapplique pas l'opération.
+
+Les résultats distinguent au minimum `APPLIED`, `ALREADY_PROCESSED`, `CONFLICT`, `REJECTED` et `RETRYABLE_ERROR`.
 
 Le serveur traite chaque mutation de manière idempotente et persistante.
 
@@ -197,7 +213,19 @@ Le protocole doit permettre de distinguer au minimum :
 - mutation refusée pour autorisation ou intégrité ;
 - erreur transitoire permettant un retry.
 
-Le format exact des requêtes, réponses et erreurs reste à définir lors de la conception de l'API.
+Le contrat utilise une enveloppe d'erreur commune :
+
+```json
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "...",
+    "retryable": false
+  }
+}
+```
+
+Les messages d'erreur ne doivent pas contenir de données financières ni révéler des informations permettant de contourner l'autorisation.
 
 ## Atomicité serveur
 

@@ -68,6 +68,10 @@ Le protocole de synchronisation V1 renforce plusieurs garanties de sécurité et
 
 Le principe global « dernier écrit gagne » n'est pas utilisé pour les données financières. Les conflits incompatibles doivent être détectés et traités explicitement.
 
+Le contrat API impose une enveloppe d'erreur commune. Les réponses de conflit peuvent exposer l'identifiant de mutation, l'identifiant d'entité et la version courante nécessaires au traitement du conflit, mais ne doivent pas renvoyer automatiquement la représentation courante d'une entité. Le client récupère ensuite l'état autorisé par le pull normal.
+
+L'idempotence des mutations est scoped par `(user_id, mutation_id)). Cette portée empêche qu'une connaissance accidentelle d'un `mutation_id` permette de réutiliser ou consulter le résultat d'une mutation appartenant à un autre utilisateur.
+
 ## Secrets
 
 Les secrets et credentials ne doivent jamais être commités dans le dépôt.

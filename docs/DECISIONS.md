@@ -345,3 +345,49 @@ Les approches distribuées plus complexes apportent une capacité de convergence
 ### Statut
 
 **Validée.**
+
+
+## 2026-10-07 — Contrat API V1
+
+### Décision
+
+Le contrat public V1 sépare explicitement les **Business API** du **Sync API**. Les opérations de synchronisation utilisent :
+
+- `POST /sync/push` pour les mutations locales ;
+- `POST /sync/pull` pour récupérer les changements postérieurs à un curseur ;
+- un JWT obligatoire pour les opérations protégées ;
+- une enveloppe d'erreur commune ;
+- une idempotence des mutations portée par le couple `(user_id, mutation_id)` ;
+- une détection explicite des conflits fondée sur `base_version` ;
+- un curseur global représentant une position dans le journal serveur, avec filtrage des changements côté serveur avant transmission.
+
+Une réponse de conflit n'inclut pas automatiquement la représentation courante de l'entité. Le client récupère ensuite l'état auquel il a droit via le pull normal.
+
+### Contexte
+
+Le protocole de synchronisation V1 est désormais suffisamment défini pour fixer sa frontière HTTP publique, sans figer les détails SQL ni les DTO complets de toutes les entités.
+
+### Alternatives considérées
+
+- exposer le journal interne directement au client ;
+- utiliser des paramètres GET pour le pull ;
+- identifier l'idempotence uniquement par `mutation_id` global ;
+- renvoyer automatiquement l'entité courante dans les conflits ;
+- mélanger les Business API et le protocole de synchronisation.
+
+### Raisons
+
+La séparation Business/Sync clarifie les responsabilités et permet de faire évoluer le protocole sans coupler les routes métier à l'infrastructure de synchronisation.
+
+Le `POST` pour le pull permet un payload structuré. La portée `(user_id, mutation_id)` évite qu'un identifiant de mutation ne soit interprété hors de son contexte d'identité. Le filtrage serveur avant transmission protège les données financières privées. Le pull normal comme mécanisme de récupération après conflit évite de créer une seconde voie de lecture potentiellement moins contrôlée.
+
+### Conséquences
+
+- Les futurs clients doivent respecter le même contrat public de synchronisation.
+- Le backend doit authentifier chaque requête protégée et appliquer l'autorisation avant transmission.
+- Les détails de conflit par entité, DTO complets, limites de lots, retry/backoff et routes métier restent ouverts.
+- L'implémentation peut choisir librement sa structure Fastify, ses repositories et son schéma SQL tant que les garanties publiques sont respectées.
+
+### Statut
+
+**Validée.**

@@ -135,7 +135,89 @@ Le protocole V1 repose sur les mécanismes suivants :
 
 Le protocole privilégie la récupération déterministe et la simplicité opérationnelle. Les CRDT, vector clocks, event sourcing complet et autres mécanismes distribués plus complexes ne sont pas retenus pour V1 sans besoin démontré.
 
-Les détails des endpoints, payloads, erreurs, règles de conflit par entité, rétention du journal/tombstones, pagination et retry restent des décisions d'implémentation.
+### Contrat API V1
+
+Le contrat public sépare explicitement les **Business API** du **Sync API**. Le backend reste la seule frontière applicative entre les clients et PostgreSQL.
+
+Toutes les opérations protégées utilisent :
+
+```
+Authorization: Bearer <JWT>
+```
+
+Le backend vérifie le JWT et dérive l'identité depuis son `sub`. Les contrôles d'autorisation et de confidentialité sont appliqués côté serveur avant toute lecture ou transmission.
+
+Le Sync API expose conceptuellement :
+
+```
+POST /sync/push
+POST /sync/pull
+```
+
+Le transport utilise `POST` pour permettre des payloads structurés et ne pas faire dépendre le protocole de synchronisation d'une query string.
+
+Une mutation de push porte au minimum :
+
+```json
+{
+  "mutation_id": "...",
+  "operation": "UPDATE_TRANSACTION",
+  "entity_id": "...",
+  "base_version": 7,
+  "payload": {}
+}
+```
+
+Le `mutation_id` est stable pour une mutation logique et son idempotence est scoped par l'identité authentifiée : le serveur raisonne sur le couple `(user_id, mutation_id)`.
+
+Un résultat de push distingue au minimum :
+
+- `APPLIED` ;
+- `ALREADY_PROCESSED` ;
+- `CONFLICT` ;
+- `REJECTED` ;
+- `RETRYABLE_ERROR`.
+
+Une réponse d'application porte notamment l'identifiant de mutation, l'identifiant d'entité, la nouvelle version d'entité et la révision serveur lorsque ces informations sont pertinentes.
+
+Une requête de pull porte conceptuellement :
+
+```json
+{
+  "cursor": 152,
+  "limit": 100
+}
+```
+
+La réponse porte :
+
+```json
+{
+  "changes": [],
+  "next_cursor": 153,
+  "has_more": false
+}
+```
+
+Le curseur représente une position dans le journal global, pas le nombre de changements visibles. Le serveur filtre les changements avant de les inclure dans `changes`.
+
+Les erreurs utilisent une enveloppe commune :
+
+```json
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "...",
+    "retryable": false
+  }
+}
+```
+
+Les messages d'erreur ne doivent pas divulguer de données financières, de contenu d'une entité non autorisée ou d'informations permettant de contourner l'autorisation.
+
+En cas de conflit, la réponse peut indiquer l'identifiant de mutation, l'entité concernée et la version courante, mais **ne renvoie pas automatiquement la représentation courante de l'entité**. Le client récupère ensuite l'état autorisé via le pull normal. Cela évite une voie de fuite de données et maintient une seule mécanique de lecture synchronisée.
+
+Le contrat public fixe ces garanties sans figer prématurément les DTO complets de chaque entité, les règles de conflit propres à chaque type, la pagination définitive ou les détails internes de persistance.
 
 ## Extensibilité multiplateforme
 
@@ -161,11 +243,11 @@ Ne sont pas verrouillés par cette architecture :
 
 - bibliothèque HTTP Android précise ;
 - parcours d'authentification détaillé : durée de vie des sessions, renouvellement, révocation et déconnexion ;
-- format exact des endpoints et payloads de synchronisation ;
+- DTO complets et routes métier détaillées des Business API ;
 - règles de conflit par type d'entité ;
 - politique de rétention, compactage et purge du journal/tombstones ;
 - stratégie de backoff/retry détaillée ;
 - pagination et taille maximale des lots ;
-- format détaillé des erreurs ;
+- détails complémentaires du catalogue d'erreurs au-delà de l'enveloppe commune ;
 - versions exactes des dépendances et SDK ;
 - traitements durables, files de travail ou autres composants d'exécution à ajouter si les besoins futurs le justifient.
