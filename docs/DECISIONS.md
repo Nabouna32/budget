@@ -391,3 +391,8 @@ Le `POST` pour le pull permet un payload structuré. La portée `(user_id, mutat
 ### Statut
 
 **Validée.**
+
+
+## PostgreSQL tooling V1
+
+Decision recorded during Step 7F.
