@@ -36,7 +36,7 @@ La vérification des signatures JWT doit privilégier les clés publiques/JWKS p
 
 Le backend reste la seule frontière applicative vers PostgreSQL. Le client Android ne doit pas utiliser directement la Data API Supabase pour les données métier.
 
-Les tables PostgreSQL V1 résident dans `public` mais ont RLS activé comme défense en profondeur. Aucune politique d'accès client n'est encore définie : l'autorisation métier reste exclusivement portée par Fastify. Le rôle de connexion PostgreSQL et son niveau de privilège restent à décider avant l'accès runtime.
+Les tables PostgreSQL V1 résident dans `public` mais ont RLS activé comme défense en profondeur. Aucune politique d'accès client n'est encore définie : l'autorisation métier reste exclusivement portée par Fastify. Le backend utilisera à terme un rôle PostgreSQL runtime dédié à privilèges minimaux, séparé du rôle de migration/administration. Cette décision est validée ; la mise en œuvre est différée jusqu'à l'identification des opérations SQL runtime réelles.
 
 Les détails de durée de vie des sessions, renouvellement, révocation et déconnexion seront définis lors de l'implémentation de l'authentification.
 
