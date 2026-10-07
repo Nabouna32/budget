@@ -2,7 +2,7 @@
 
 ## État
 
-**Architecture V1 validée le 2026-10-07.**
+**Architecture V1 et protocole de synchronisation V1 validés le 2026-10-07.**
 
 Le backend V1 et son hébergement sont désormais formalisés : **TypeScript + Fastify**, déployé sur **Vercel Functions / Fluid Compute**, avec **Supabase PostgreSQL** comme persistance distante et **Supabase Auth** pour l'identité utilisateur. Ce choix est **Free-first mais pas Free-dependent** : l'architecture doit rester portable si les besoins dépassent les offres gratuites.
 
@@ -118,16 +118,24 @@ L'application Android est conçue selon un modèle **offline-first** :
 - une indisponibilité réseau ne doit pas rendre l'application inutilisable ;
 - la synchronisation est un mécanisme de propagation, pas une condition préalable au fonctionnement courant de l'application.
 
-## Synchronisation
+## Synchronisation V1
 
-Les mutations synchronisables sont conçues pour être :
+Le protocole V1 repose sur les mécanismes suivants :
 
-- versionnées ;
-- traçables au niveau technique ;
-- idempotentes afin de supporter les retries ;
-- indépendantes du cycle de vie d'une conversation ou d'un client particulier.
+- **mutation_id stable** pour rendre les mutations idempotentes ;
+- **révision serveur globale monotone** pour ordonner les changements ;
+- **version par entité** pour détecter les modifications concurrentes ;
+- **journal de changements persistant** côté serveur ;
+- **curseur de pull** pour reprendre la synchronisation de manière déterministe ;
+- **push idempotent** des opérations locales en attente ;
+- **transactions PostgreSQL atomiques** pour coupler mutation, versionnement, journal et résultat de mutation ;
+- **tombstones** pour propager les suppressions ;
+- **détection explicite des conflits**, sans Last-Write-Wins global ;
+- **filtrage serveur des données** avant transmission selon les règles d'autorisation et de confidentialité.
 
-Les détails du protocole et des règles de résolution des conflits sont définis dans `docs/SYNC.md`.
+Le protocole privilégie la récupération déterministe et la simplicité opérationnelle. Les CRDT, vector clocks, event sourcing complet et autres mécanismes distribués plus complexes ne sont pas retenus pour V1 sans besoin démontré.
+
+Les détails des endpoints, payloads, erreurs, règles de conflit par entité, rétention du journal/tombstones, pagination et retry restent des décisions d'implémentation.
 
 ## Extensibilité multiplateforme
 
@@ -153,6 +161,11 @@ Ne sont pas verrouillés par cette architecture :
 
 - bibliothèque HTTP Android précise ;
 - parcours d'authentification détaillé : durée de vie des sessions, renouvellement, révocation et déconnexion ;
-- protocole de synchronisation détaillé et ses règles de résolution des conflits ;
+- format exact des endpoints et payloads de synchronisation ;
+- règles de conflit par type d'entité ;
+- politique de rétention, compactage et purge du journal/tombstones ;
+- stratégie de backoff/retry détaillée ;
+- pagination et taille maximale des lots ;
+- format détaillé des erreurs ;
 - versions exactes des dépendances et SDK ;
 - traitements durables, files de travail ou autres composants d'exécution à ajouter si les besoins futurs le justifient.
