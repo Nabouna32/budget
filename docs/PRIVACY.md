@@ -28,19 +28,40 @@ Le produit sépare explicitement :
 
 Cette séparation est nécessaire pour permettre à un utilisateur de conserver des données personnelles tout en contribuant à un budget partagé.
 
+## Autorisation en couches
+
+Le modèle V1 sépare explicitement :
+
+1. l'identité de l'utilisateur ;
+2. l'appartenance à l'espace ;
+3. la permission d'effectuer une opération ;
+4. la participation de la source financière au contexte ;
+5. la sélection de la source dans un budget ;
+6. la visibilité de la donnée.
+
+Une permission ou une visibilité ne peut jamais contourner une couche plus restrictive. En particulier, une politique de visibilité `SHARED` n'accorde pas à elle seule un accès à une donnée.
+
+Les rôles d'espace V1 sont `OWNER`, `EDITOR` et `VIEWER`. Le rôle est un rôle d'espace et ne transforme pas son détenteur en propriétaire des comptes des autres membres.
+
+Les statuts de membre V1 sont `ACTIVE`, `INVITED`, `SUSPENDED` et `REMOVED`. Seul un membre `ACTIVE` peut accéder aux données selon son rôle et les autres règles de contexte.
+
+La suppression des données financières d'un autre utilisateur est interdite par défaut pour `EDITOR`. Les droits précis par entité et opération restent à détailler dans l'implémentation de l'API.
+
 ## Politique de visibilité hybride
 
 Le modèle retenu est **hybride**.
 
-La visibilité n'est pas modélisée comme un simple booléen global. Elle doit pouvoir être évaluée comme une politique appliquée au contexte concerné.
+La visibilité n'est pas modélisée comme un simple booléen global. Elle est évaluée dans le contexte auquel l'utilisateur a déjà accès.
 
-Conceptuellement, une politique peut notamment exprimer :
+Une politique peut exprimer :
 
-- `PRIVATE` : données accessibles uniquement au propriétaire ;
-- `SHARED` : données partageables dans le contexte autorisé ;
-- `INHERIT` : comportement hérité d'une règle supérieure.
+- `PRIVATE` : donnée réservée au propriétaire autorisé ;
+- `SHARED` : donnée exposable dans le contexte partagé autorisé ;
+- `INHERIT` : comportement hérité de la règle supérieure.
 
-Ces valeurs sont conceptuelles à ce stade ; la taxonomie définitive des politiques et permissions sera arrêtée lors de la conception de la collaboration.
+Une surcharge transactionnelle ne peut jamais créer un droit d'accès qui n'existe pas au niveau de l'espace ou de la source. Elle peut seulement modifier la visibilité d'une donnée déjà accessible dans le contexte.
+
+Le serveur reste l'autorité d'autorisation et de confidentialité.
 
 ## Niveau compte/source
 
