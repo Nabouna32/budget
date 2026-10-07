@@ -91,3 +91,14 @@ La migration PostgreSQL V1 active RLS sur les tables métier et de synchronisati
 - gestion des clés ;
 - politique de sauvegarde ;
 - contrôles de sécurité Vercel/Supabase spécifiques à l'implémentation ;
+
+
+## Connexion PostgreSQL runtime V1
+
+Le secret de connexion PostgreSQL est exclusivement fourni au backend via `DATABASE_URL`. Il ne doit jamais être embarqué dans Android, exposé au client ou commité dans Git.
+
+Le backend utilise `pg` et le Supavisor Transaction Pooler. Le pool est limité à une connexion par instance Vercel afin de réduire la multiplication des connexions. L'autorisation métier reste portée par Fastify ; RLS reste une défense en profondeur.
+
+Le choix de `pg` remplace `postgres.js` pour éviter le risque de pipelining avec le pooler transactionnel partagé, qui serait particulièrement problématique pour les transactions atomiques du protocole de synchronisation.
+
+Le recours à un rôle PostgreSQL dédié à privilèges minimaux reste à étudier séparément avant d'introduire des privilèges plus fins.
