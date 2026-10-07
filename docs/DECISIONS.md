@@ -307,7 +307,7 @@ Le protocole de synchronisation V1 repose sur :
 - une **détection explicite des conflits**, sans règle globale de Last-Write-Wins ;
 - un **filtrage serveur des changements** avant transmission selon les autorisations et politiques de confidentialité.
 
-Les détails d'API, les règles de conflit par entité, la rétention du journal et des tombstones, le backoff, la pagination et le temps réel restent des décisions d'implémentation ultérieures.
+Les détails d'API métier, les règles de conflit par entité, la rétention du journal et des tombstones, le backoff et le temps réel restent des décisions ultérieures. Les DTO et mutations du Sync API sont désormais définis par une décision dédiée.
 
 ### Contexte
 
@@ -385,13 +385,57 @@ Le `POST` pour le pull permet un payload structuré. La portée `(user_id, mutat
 
 - Les futurs clients doivent respecter le même contrat public de synchronisation.
 - Le backend doit authentifier chaque requête protégée et appliquer l'autorisation avant transmission.
-- Les DTO complets par entité, les règles de conflit, le retry/backoff détaillé et les routes métier restent ouverts ; les enveloppes HTTP, les limites de lots, la pagination par curseur et la classification de base des erreurs de transport sont définies dans le protocole V1.
+- Les règles de conflit, le retry/backoff détaillé et les routes métier restent ouverts ; les DTO et mutations du Sync API sont définis dans docs/SYNC-API.md, tandis que les enveloppes HTTP, les limites de lots, la pagination par curseur et la classification de base des erreurs de transport sont définies dans le protocole V1.
 - L'implémentation peut choisir librement sa structure Fastify, ses repositories et son schéma SQL tant que les garanties publiques sont respectées.
 
 ### Statut
 
 **Validée.**
 
+
+## 2026-10-07 — DTO et mutations du Sync API V1
+
+### Décision
+
+Le contrat métier du Sync API V1 est désormais fixé dans **docs/SYNC-API.md**.
+
+Le catalogue V1 distingue explicitement :
+
+- les entités synchronisables et leurs opérations CREATE/UPDATE/DELETE ;
+- les relations qui ne doivent pas être manipulées par CRUD générique ;
+- les mutations multi-objets qui doivent rester atomiques ;
+- les champs client et les champs serveur ;
+- les validations structurelles ;
+- les statuts de résultat de mutation ;
+- le catalogue minimal des erreurs HTTP et métier.
+
+Les mutations de SpaceMember et User restent hors CRUD générique du Sync API : les premières relèvent des workflows de collaboration, les secondes de Supabase Auth et du cycle de vie d'identité.
+
+TransactionLine et TransferGroup ne disposent pas de mutations CRUD indépendantes V1 : lorsqu'ils sont concernés par une mutation financière, ils sont traités dans la même unité logique que la Transaction afin de préserver les invariants.
+
+L'ordre des mutations dans un batch ne crée aucune dépendance implicite. Une dépendance nécessitant plusieurs objets doit être représentée par une seule mutation logique. Les dépendances explicites entre mutations distinctes ne sont pas ajoutées sans besoin concret.
+
+### Challenge
+
+Un CRUD générique de toutes les tables aurait artificiellement exposé les relations d'administration et aurait permis de casser des invariants financiers en modifiant séparément une Transaction et ses lignes. À l'inverse, inventer dès maintenant un système de dépendances entre mutations aurait ajouté une complexité de planification sans besoin démontré.
+
+Le contrat retenu limite donc volontairement la surface du Sync API aux opérations que le modèle V1 peut représenter proprement.
+
+### Conséquences
+
+- docs/SYNC-API.md devient la référence contractuelle des DTO et mutations ;
+- l'implémentation du Sync API peut maintenant être dérivée de ce contrat sans inventer de payloads ;
+- les règles de conflit restent suivies par l'Issue #13 ;
+- les invariants financiers complexes restent suivis par l'Issue #17 ;
+- la taxonomie des catégories reste suivie par l'Issue #18 ;
+- les règles de devises restent suivies par l'Issue #20 ;
+- le retry/backoff détaillé reste suivi par l'Issue #22.
+
+### Statut
+
+**Validée.**
+
+---
 
 ## PostgreSQL tooling V1
 
