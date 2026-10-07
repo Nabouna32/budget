@@ -25,7 +25,7 @@ Business APIs and synchronization are not implemented yet. PostgreSQL runtime ac
 
 From this directory:
 
-    npm install
+    npm ci
     npm run dev
 
 Run the checks with:
