@@ -251,3 +251,8 @@ Ne sont pas verrouillés par cette architecture :
 - détails complémentaires du catalogue d'erreurs au-delà de l'enveloppe commune ;
 - versions exactes des dépendances et SDK ;
 - traitements durables, files de travail ou autres composants d'exécution à ajouter si les besoins futurs le justifient.
+
+
+## PostgreSQL runtime
+
+Le backend utilisera un driver PostgreSQL avec SQL explicite. Les migrations sont versionnées dans supabase/migrations/ avec le Supabase CLI. Le détail de la connexion runtime sera défini lors de l'implémentation de l'accès PostgreSQL.

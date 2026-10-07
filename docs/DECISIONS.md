@@ -391,3 +391,11 @@ Le `POST` pour le pull permet un payload structuré. La portée `(user_id, mutat
 ### Statut
 
 **Validée.**
+
+
+## PostgreSQL tooling V1
+
+Decision recorded during Step 7F.
+
+- Driver retenu : PostgreSQL driver avec SQL explicite.
+- Migrations : Supabase CLI dans supabase/migrations/.

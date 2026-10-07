@@ -4,7 +4,7 @@
 
 **Modèle métier détaillé V1 et architecture de synchronisation V1 validés le 2026-10-07.**
 
-Le schéma PostgreSQL concret, les migrations et les index définitifs restent à concevoir à partir de ce modèle et du contrat de synchronisation.
+Le schéma PostgreSQL concret et les index définitifs restent à concevoir à partir de ce modèle et du contrat de synchronisation. Les migrations sont désormais versionnées dans supabase/migrations/ avec le Supabase CLI.
 
 ## PostgreSQL
 
@@ -412,7 +412,6 @@ Aucune donnée financière réelle ne doit apparaître dans :
 ## Non décidé
 
 - schéma SQL physique définitif ;
-- stratégie exacte de migrations ;
 - index définitifs ;
 - type SQL exact des montants ;
 - stratégie de rétention et d'audit ;
@@ -420,3 +419,9 @@ Aucune donnée financière réelle ne doit apparaître dans :
 - taxonomie définitive des catégories ;
 - protocole API détaillé ;
 - règles de conflit par type d'entité.
+
+## Outillage PostgreSQL V1
+
+Les migrations de schéma sont versionnées dans supabase/migrations/ et générées avec le Supabase CLI. Le runtime applicatif n'utilisera pas le CLI pour accéder aux données : l'API Fastify utilisera le driver PostgreSQL retenu séparément.
+
+Aucune table métier n'est créée par la mise en place de cet outillage.
