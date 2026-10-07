@@ -558,3 +558,28 @@ Le Session Pooler partagé est accessible en IPv4 sur le plan Free et évite le 
 ### Statut
 
 **Validée et implémentée dans la PR dédiée.**
+
+## 2026-10-07 — Rôle PostgreSQL runtime à privilèges minimaux
+
+### Décision
+
+Le runtime Fastify utilisera à terme un **rôle PostgreSQL dédié à privilèges minimaux**, distinct du rôle utilisé pour les migrations et opérations d'administration.
+
+Le rôle runtime sera limité aux privilèges SQL nécessaires aux opérations réellement implémentées par l'API. Il ne disposera pas des privilèges DDL ou de gestion des rôles nécessaires aux migrations et à l'administration.
+
+La mise en œuvre du rôle est volontairement différée jusqu'à ce que les opérations SQL du runtime, notamment celles du Sync API, soient suffisamment concrètes pour établir une matrice de privilèges minimale et vérifiable.
+
+### Raisons
+
+Le runtime Fastify constitue la frontière d'autorisation applicative, mais un compte PostgreSQL trop privilégié augmenterait l'impact d'une compromission du backend. La séparation migration/runtime réduit ce risque sans remplacer les contrôles métier ni RLS de défense en profondeur.
+
+### Conséquences
+
+- DATABASE_URL du runtime devra utiliser le rôle dédié lorsqu'il sera introduit.
+- Les migrations Supabase CLI continueront d'utiliser leur chemin d'administration distinct.
+- La définition des privilèges doit être dérivée des requêtes SQL réellement utilisées, pas d'une estimation prématurée.
+- L'introduction du rôle fera l'objet d'une étape dédiée avec vérification de compatibilité Supavisor et des transactions de synchronisation.
+
+### Statut
+
+**Validée — mise en œuvre différée.**
