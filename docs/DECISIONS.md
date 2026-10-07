@@ -493,3 +493,42 @@ Supavisor Transaction Pooler est adapté aux connexions serverless et évite de 
 ### Statut
 
 **Validée.**
+
+
+---
+
+## 2026-10-07 — Déploiement automatique des migrations Supabase
+
+### Décision
+
+Les migrations PostgreSQL versionnées dans `supabase/migrations/` sont déployées automatiquement vers le projet Supabase de production après un push sur `main`.
+
+Le déploiement est assuré par GitHub Actions avec le Supabase CLI. Le workflow effectue d'abord un `supabase db push --dry-run`, puis `supabase db push` pour appliquer effectivement les migrations non encore présentes dans l'historique distant.
+
+### Contexte
+
+Le schéma V1 est maintenant versionné et l'historique Supabase a été réconcilié. Une application manuelle après chaque merge créerait un risque d'oubli et ferait diverger l'état réel de production de la source de vérité Git.
+
+### Alternatives considérées
+
+- appliquer les migrations manuellement après les merges ;
+- CI uniquement en vérification sans déploiement automatique ;
+- déploiement automatique sur `main` après validation CI.
+
+### Raisons
+
+Le déploiement automatique rend le passage de Git vers la base déterministe et réduit le risque d'un schéma de production oublié. Le `dry-run` fournit un pré-contrôle explicite avant l'application réelle.
+
+La concurrence du workflow est sérialisée afin d'éviter deux `db push` simultanés sur le même projet.
+
+### Conséquences
+
+- Un merge sur `main` peut modifier le schéma de production sans intervention manuelle supplémentaire.
+- Le token Supabase est stocké uniquement dans GitHub Secrets et ne doit jamais être commité.
+- Toute migration future doit être conçue comme un changement de production et vérifiée avant merge.
+- Une migration défectueuse peut échouer le workflow ; elle ne doit pas être masquée par une modification manuelle de l'historique.
+- Les migrations déjà présentes dans l'historique distant sont ignorées par `db push`.
+
+### Statut
+
+**Validée.**
