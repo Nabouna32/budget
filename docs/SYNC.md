@@ -157,13 +157,9 @@ Conceptuellement :
 last_server_revision = 102
 ```
 
-Le client demande ensuite les changements postérieurs à ce curseur :
+Le client demande ensuite les changements postérieurs à ce curseur via l'opération de **pull** du protocole. Le serveur retourne un lot autorisé ainsi qu'un `next_cursor`.
 
-```
-GET /sync/pull?cursor=102
-```
-
-Le serveur retourne un lot autorisé ainsi qu'un `next_cursor`.
+Le chemin HTTP exact et les paramètres de transport restent à définir dans le contrat API.
 
 Le client ne doit avancer son curseur qu'après avoir appliqué tout le lot avec succès dans sa base locale.
 
@@ -187,11 +183,9 @@ Le curseur représente une position dans le journal global, pas le nombre de cha
 
 Les opérations locales non confirmées sont conservées dans une file persistante côté client, conceptuellement `PendingOperation`.
 
-Le client envoie des lots de mutations à l'API de synchronisation :
+Le client envoie des lots de mutations à l'opération de **push** du protocole.
 
-```
-POST /sync/push
-```
+Le chemin HTTP exact et le format du transport restent à définir dans le contrat API.
 
 Le serveur traite chaque mutation de manière idempotente et persistante.
 
@@ -342,7 +336,7 @@ Vercel / Fastify API
 Supabase PostgreSQL
 ```
 
-Le backend authentifie la requête, détermine l'utilisateur à partir du JWT, applique les règles d'autorisation et de confidentialité, puis exécute les opérations métier et de synchronisation. 
+Le backend authentifie la requête, détermine l'utilisateur à partir du JWT, applique les règles d'autorisation et de confidentialité, puis exécute les opérations métier et de synchronisation.
 
 Cette frontière permet d'ajouter d'autres clients sans reproduire la logique d'accès aux données ou les règles de sécurité.
 
