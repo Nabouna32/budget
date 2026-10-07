@@ -2,7 +2,7 @@
 
 ## État
 
-**Principes de confidentialité V1 confirmés le 2026-10-07.**
+**Principes de confidentialité V1 et garanties de filtrage du protocole de synchronisation confirmés le 2026-10-07.**
 
 Les données budgétaires et financières sont considérées comme sensibles.
 
@@ -98,6 +98,29 @@ Les mécanismes de synchronisation doivent notamment éviter :
 - la fuite d'une transaction supprimée ou remplacée ;
 - l'exposition d'un détail financier via une réponse d'agrégation non autorisée ;
 - la réapparition d'une donnée privée après un retry.
+
+## Synchronisation et filtrage serveur
+
+Le serveur applique les règles d'accès **avant** toute transmission au client.
+
+Pour un changement issu du journal de synchronisation, le backend doit notamment considérer :
+
+1. l'appartenance actuelle de l'utilisateur à l'espace ;
+2. la participation de la source au contexte concerné ;
+3. la sélection de la source par le budget lorsque le contexte est budgétaire ;
+4. la politique de visibilité applicable ;
+5. une éventuelle surcharge au niveau de la transaction.
+
+Le journal global interne peut contenir des changements qui ne sont pas visibles par un client donné. Le curseur client représente donc une position dans le journal global et non une liste de changements visibles. Un client peut franchir des révisions invisibles sans recevoir leur contenu.
+
+Une donnée financière à laquelle un utilisateur n'a pas accès ne doit jamais être envoyée pour être simplement masquée dans l'UI.
+
+Le filtrage doit également être appliqué aux :
+
+- suppressions et tombstones ;
+- réponses de retry ;
+- agrégats ;
+- changements issus d'une opération concurrente.
 
 ## Client local
 
