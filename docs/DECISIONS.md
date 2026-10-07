@@ -180,3 +180,55 @@ Le modèle extensible couvre les cas réels sans imposer dès V1 un système com
 ### Statut
 
 **Validée.**
+
+
+---
+
+## 2026-10-07 — Modèle détaillé des espaces, sources et budgets
+
+### Décision
+
+Le modèle V1 autorise :
+
+- un compte à participer à plusieurs espaces ;
+- un budget à sélectionner explicitement certaines sources financières participantes ;
+- une politique de visibilité plutôt qu'un simple booléen pour représenter la confidentialité des données partagées.
+
+Une relation dédiée entre le budget et la participation de compte sera utilisée conceptuellement pour sélectionner les sources d'un budget sans dupliquer les comptes ou transactions.
+
+### Contexte
+
+Le produit doit permettre à un utilisateur de conserver ses données personnelles tout en utilisant certaines sources dans un ou plusieurs contextes partagés. Un espace peut contenir plusieurs comptes, tandis qu'un budget particulier peut ne nécessiter qu'un sous-ensemble de ces comptes.
+
+La confidentialité doit également pouvoir évoluer au-delà d'un simple partage oui/non, notamment avec des règles générales au niveau d'une source et des exceptions au niveau d'une transaction.
+
+### Alternatives considérées
+
+- imposer un compte à un seul espace ;
+- inclure automatiquement tous les comptes d'un espace dans chaque budget ;
+- copier les comptes ou transactions pour les budgets partagés ;
+- représenter la visibilité par un booléen global ;
+- séparer propriété, participation, sélection budgétaire et visibilité.
+
+### Raisons
+
+Permettre plusieurs participations préserve l'identité et l'historique des comptes.
+
+La sélection explicite par budget évite de coupler artificiellement tous les comptes d'un espace à tous ses budgets.
+
+Une politique de visibilité permet de préserver la confidentialité financière tout en laissant la place à des règles plus fines que le seul choix public/privé.
+
+La séparation des relations évite de dupliquer les données financières et reste compatible avec l'offline-first et la synchronisation.
+
+### Conséquences
+
+- `AccountParticipation` représente l'utilisation d'un compte dans un espace sans transférer sa propriété.
+- `BudgetAccountSelection` permet à un budget de choisir explicitement les participations qu'il agrège.
+- Une transaction reste rattachée à son compte et n'est jamais copiée pour un budget.
+- La visibilité doit être évaluée dans le contexte de l'espace et du budget concerné.
+- Les API et le moteur de synchronisation doivent appliquer les règles de confidentialité avant transmission des données.
+- Les rôles, permissions et valeurs exactes des politiques de visibilité restent des décisions ultérieures.
+
+### Statut
+
+**Validée.**
