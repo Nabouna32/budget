@@ -101,7 +101,7 @@ Le backend utilise `pg` et le Supavisor Transaction Pooler. Le pool est limité 
 
 Le choix de `pg` remplace `postgres.js` pour éviter le risque de pipelining avec le pooler transactionnel partagé, qui serait particulièrement problématique pour les transactions atomiques du protocole de synchronisation.
 
-Le recours à un rôle PostgreSQL dédié à privilèges minimaux est une décision validée en 7G ; sa mise en œuvre est différée jusqu'à ce que les opérations SQL runtime réelles permettent d'établir une matrice de privilèges minimale et vérifiable. Elle est suivie par l'Issue #27.
+Le recours à un rôle PostgreSQL dédié à privilèges minimaux est une décision validée en 7G ; sa mise en œuvre reste différée jusqu'à ce que les opérations SQL runtime réelles permettent d'établir une matrice de privilèges minimale et vérifiable. Elle est suivie par l'Issue #27.
 
 
 ## CI Supabase et connectivité IPv4
