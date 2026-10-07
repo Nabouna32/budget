@@ -467,3 +467,7 @@ Les migrations de production sont appliquées automatiquement par GitHub Actions
 Le workflow `.github/workflows/supabase-migrations.yml` cible explicitement le projet Supabase de production, installe le Supabase CLI, effectue un `supabase db push --dry-run`, puis applique `supabase db push`. Les déploiements sont sérialisés et le workflow peut être relancé manuellement avec `workflow_dispatch`.
 
 L'authentification CI repose sur les secrets GitHub `SUPABASE_ACCESS_TOKEN` et `SUPABASE_DB_PASSWORD`. Le token est un scoped Personal Access Token Supabase limité au projet et aux permissions nécessaires ; le mot de passe est le mot de passe PostgreSQL propre au projet. Aucune de ces valeurs ne doit être versionnée ou affichée dans les logs.
+
+### Connexion CI Supabase et IPv4
+
+GitHub Actions étant IPv4-only dans cet environnement, le workflow de migrations n'utilise pas la connexion PostgreSQL directe IPv6. Il reçoit `SUPABASE_DB_URL` comme secret GitHub contenant la **connexion Supavisor Session Pooler** du projet (port 5432), puis transmet explicitement cette URL à `supabase db push --db-url`. Le Session Pooler est IPv4 et ne nécessite pas l'IPv4 Add-On payant. `SUPABASE_DB_PASSWORD` reste conservé pour les opérations CLI de liaison ; aucune URL ou credential n'est versionnée.

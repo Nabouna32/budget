@@ -102,3 +102,8 @@ Le backend utilise `pg` et le Supavisor Transaction Pooler. Le pool est limité 
 Le choix de `pg` remplace `postgres.js` pour éviter le risque de pipelining avec le pooler transactionnel partagé, qui serait particulièrement problématique pour les transactions atomiques du protocole de synchronisation.
 
 Le recours à un rôle PostgreSQL dédié à privilèges minimaux reste à étudier séparément avant d'introduire des privilèges plus fins.
+
+
+## CI Supabase et connectivité IPv4
+
+Le workflow GitHub Actions de migrations utilise une URL `SUPABASE_DB_URL` stockée comme secret GitHub et pointant vers le Supavisor Session Pooler IPv4. Cette séparation évite d'utiliser l'endpoint PostgreSQL direct IPv6 depuis GitHub Actions et ne nécessite pas l'IPv4 Add-On. L'URL complète, le mot de passe et le token restent hors du dépôt et ne doivent jamais apparaître dans les logs.
