@@ -435,6 +435,20 @@ Aucune donnée financière réelle ne doit apparaître dans :
 
 ## Outillage PostgreSQL V1
 
-Les migrations de schéma sont versionnées dans supabase/migrations/ et générées avec le Supabase CLI. Le runtime applicatif n'utilisera pas le CLI pour accéder aux données : l'API Fastify utilisera le driver PostgreSQL retenu séparément.
+Les migrations de schéma sont versionnées dans `supabase/migrations/` et générées avec le Supabase CLI. Le runtime applicatif n'utilisera pas le CLI pour accéder aux données.
+
+### Connexion runtime V1
+
+L'API Fastify utilise **`pg` (node-postgres)** avec du SQL explicite, sans ORM.
+
+La connexion runtime V1 repose sur l'URL `DATABASE_URL` fournie par l'environnement de déploiement. Cette URL doit cibler le **Supavisor Transaction Pooler** de Supabase pour l'exécution serverless Vercel.
+
+Le pool applicatif est volontairement limité à **une connexion maximale par instance** (`max: 1`) afin d'éviter de multiplier inutilement les connexions lorsque Vercel exécute plusieurs instances. Les requêtes utilisent des paramètres PostgreSQL natifs et aucun mécanisme de prepared statements nommé n'est introduit.
+
+Le pool est créé à la demande et reste local à l'instance stateless ; aucune donnée métier ne dépend de sa mémoire. Les timeouts de connexion et d'inactivité limitent les ressources retenues par une instance inactive.
+
+`pg` a été retenu à la place de `postgres.js` après vérification de la compatibilité avec Supavisor Transaction Pooler : Postgres.js pipeline les requêtes par défaut et sa combinaison avec le pooler transactionnel partagé peut provoquer des blocages ou des résultats associés à la mauvaise requête. Cette propriété est incompatible avec la criticité des transactions atomiques prévues pour la synchronisation V1.
+
+Le rôle PostgreSQL dédié avec privilèges minimaux reste une évolution de sécurité séparée : pour V1, le secret de connexion reste uniquement côté backend et l'autorisation métier reste portée par Fastify.
 
 La migration initiale de schéma métier et de synchronisation est désormais versionnée dans ce répertoire. Elle n'est pas appliquée au projet distant pendant l'étape de conception ; l'application et la vérification réelle sont traitées séparément.
