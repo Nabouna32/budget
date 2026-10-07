@@ -524,7 +524,7 @@ La concurrence du workflow est sérialisée afin d'éviter deux `db push` simult
 ### Conséquences
 
 - Un merge sur `main` peut modifier le schéma de production sans intervention manuelle supplémentaire.
-- Le token Supabase est stocké uniquement dans GitHub Secrets et ne doit jamais être commité.
+- Le token Supabase et le mot de passe PostgreSQL de production sont stockés uniquement dans GitHub Secrets et ne doivent jamais être committés.
 - Toute migration future doit être conçue comme un changement de production et vérifiée avant merge.
 - Une migration défectueuse peut échouer le workflow ; elle ne doit pas être masquée par une modification manuelle de l'historique.
 - Les migrations déjà présentes dans l'historique distant sont ignorées par `db push`.
