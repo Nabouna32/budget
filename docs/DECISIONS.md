@@ -532,3 +532,29 @@ La concurrence du workflow est sérialisée afin d'éviter deux `db push` simult
 ### Statut
 
 **Validée.**
+
+
+## 2026-10-07 — Connexion IPv4 du CI de migrations Supabase
+
+### Décision
+
+Le CI GitHub Actions des migrations utilise explicitement la **connexion Supavisor Session Pooler IPv4** via le secret `SUPABASE_DB_URL` et l'option `supabase db push --db-url`.
+
+### Contexte
+
+Le premier workflow utilisait la connexion sélectionnée implicitement par le CLI après `supabase link`. GitHub Actions étant IPv4-only, `supabase db push --dry-run` échouait avec une erreur d'absence de support IPv6.
+
+### Raisons
+
+Le Session Pooler partagé est accessible en IPv4 sur le plan Free et évite le coût d'un IPv4 Add-On. La connexion est fournie explicitement afin de rendre le comportement du CI déterministe.
+
+### Conséquences
+
+- `SUPABASE_DB_URL` devient un troisième secret CI, contenant uniquement l'URL Session Pooler du projet avec le mot de passe non inclus ou correctement protégé selon la valeur fournie ;
+- `SUPABASE_DB_PASSWORD` reste utilisé pour les commandes CLI qui en ont besoin ;
+- le CI ne dépend plus d'une sélection implicite d'endpoint susceptible de choisir l'IPv6 ;
+- le workflow reste compatible avec le plan Free sans IPv4 Add-On.
+
+### Statut
+
+**Validée et implémentée dans la PR dédiée.**
