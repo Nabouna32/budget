@@ -4,6 +4,8 @@
 
 **Architecture V1 validée le 2026-10-07.**
 
+Le backend V1 et son hébergement sont désormais formalisés : **TypeScript + Fastify**, déployé sur **Vercel Functions / Fluid Compute**, avec **Supabase PostgreSQL** comme persistance distante et **Supabase Auth** pour l'identité utilisateur. Ce choix est **Free-first mais pas Free-dependent** : l'architecture doit rester portable si les besoins dépassent les offres gratuites.
+
 Budget démarre avec un client **Android natif**, conçu pour offrir une excellente expérience Android sans imposer de compromis liés à une interface multiplateforme. L'architecture applicative, les contrats d'API et les règles métier doivent toutefois rester suffisamment découplés pour permettre l'ajout ultérieur de clients Web, iOS ou desktop.
 
 ## Architecture générale
@@ -12,21 +14,72 @@ Budget démarre avec un client **Android natif**, conçu pour offrir une excelle
 Android
   │
   ├── UI — Jetpack Compose
-  │
   ├── Presentation — ViewModels / UI state
-  │
   ├── Domain — entités / règles métier / use cases
-  │
   └── Data — repositories / local / API / synchronisation
               │
+              │ HTTPS + JWT
               ▼
-        Backend / API
+       Vercel / Fastify API
               │
+              │ serveur uniquement
               ▼
-          PostgreSQL
+      Supabase PostgreSQL
+
+       Supabase Auth
+             │
+             └── identité / JWT
 ```
 
 Android n'accède jamais directement à PostgreSQL. Le backend constitue la frontière d'accès aux données distantes et reste indépendant du client.
+
+## Backend et services V1
+
+### Backend API
+
+Le backend applicatif V1 est une API **TypeScript + Fastify**.
+
+Il constitue la frontière de confiance et de logique métier entre les clients et PostgreSQL. Il porte notamment :
+
+- l'authentification de la requête et l'identité utilisateur ;
+- l'autorisation ;
+- les règles de confidentialité ;
+- la validation métier ;
+- les opérations métier ;
+- le futur protocole de synchronisation ;
+- les contrôles d'idempotence, de versionnement et de cohérence côté serveur.
+
+Le backend ne doit pas dépendre de l'UI Android et doit rester exploitable par de futurs clients Web, iOS ou desktop.
+
+### Hébergement V1
+
+Le backend Fastify sera déployé sur **Vercel Functions / Fluid Compute**.
+
+Vercel est retenu pour les requêtes API normales et les traitements courts. Les Functions sont considérées comme **stateless** : aucun état métier critique ne doit dépendre de la mémoire d'une instance.
+
+Les traitements durables, les files de travail et les traitements longs ne sont pas implicitement confiés à une Function. Ils feront l'objet d'une décision séparée si le protocole de synchronisation ou les besoins futurs le justifient.
+
+### Base distante
+
+**Supabase PostgreSQL** est retenu pour la persistance distante.
+
+Android ne se connecte jamais directement à PostgreSQL et n'utilise pas directement la Data API Supabase pour contourner le backend métier.
+
+### Authentification
+
+**Supabase Auth** est retenu comme fournisseur d'identité V1.
+
+Le client Android obtient un jeton d'accès après authentification. Le backend vérifie le JWT et dérive l'identité authentifiée de son `sub`.
+
+La vérification doit privilégier les clés publiques/JWKS de Supabase plutôt que de placer inutilement un secret de signature dans le client ou dans un flux applicatif.
+
+Les détails du parcours de connexion, du renouvellement de session, de l'expiration et de la révocation restent à préciser lors de l'implémentation de l'authentification.
+
+### Principe de coût
+
+Le choix Vercel + Supabase est **Free-first** : il doit permettre de commencer avec un coût initial nul ou très faible.
+
+Cela ne constitue pas une dépendance fonctionnelle aux limites gratuites. Si le produit grandit, l'infrastructure pourra évoluer vers des offres payantes ou des composants différents sans remettre en cause les contrats métier et API.
 
 ## Stack Android V1
 
