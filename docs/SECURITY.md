@@ -62,8 +62,7 @@ Les environnements de développement et de production doivent séparer leurs sec
 
 ## Non décidé
 
-- mécanisme d'authentification ;
-- gestion des sessions/tokens ;
+- parcours détaillé des sessions/tokens : durée de vie, renouvellement, révocation et déconnexion ;
 - chiffrement local détaillé ;
 - gestion des clés ;
 - politique de sauvegarde ;
