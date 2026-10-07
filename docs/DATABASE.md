@@ -75,7 +75,15 @@ SpaceMember
 
 Un utilisateur peut appartenir à plusieurs espaces.
 
-Les rôles et permissions détaillés restent à formaliser avant l'implémentation de la collaboration.
+Les rôles d'espace V1 sont `OWNER`, `EDITOR` et `VIEWER`. Ils ne remplacent pas la propriété des comptes : `OWNER` est un rôle de l'espace et ne devient pas propriétaire des comptes appartenant aux autres membres.
+
+Les statuts de membre V1 sont `ACTIVE`, `INVITED`, `SUSPENDED` et `REMOVED`.
+
+L'autorisation est évaluée en couches : appartenance active à l'espace, permission liée au rôle, accès à la source via `AccountParticipation`, sélection budgétaire lorsque le contexte est un budget, puis politique de visibilité.
+
+Une sélection de compte dans `BudgetAccountSelection` est un filtre d'agrégation et n'accorde pas à elle seule un droit d'accès.
+
+La propriété du compte reste portée par `accounts.owner_user_id`.
 
 ### Account
 
@@ -425,7 +433,7 @@ Aucune donnée financière réelle ne doit apparaître dans :
 ## Non décidé
 
 - stratégie de rétention et d'audit ;
-- rôles et permissions détaillés ;
+- règles détaillées d'autorisation par opération et par type d'entité ;
 - taxonomie définitive des catégories ;
 - protocole API détaillé ;
 - règles de conflit par type d'entité ;

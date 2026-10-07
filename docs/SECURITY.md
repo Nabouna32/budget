@@ -82,7 +82,7 @@ Les environnements de développement et de production doivent séparer leurs sec
 
 ## Base de données et défense en profondeur
 
-La migration PostgreSQL V1 active RLS sur les tables métier et de synchronisation. Cette mesure ne remplace pas l'autorisation Fastify : elle évite qu'une exposition accidentelle aux rôles clients transforme le schéma en voie d'accès aux données. Les politiques RLS applicatives ne seront ajoutées qu'après décision explicite du modèle d'autorisation.
+La migration PostgreSQL V1 active RLS sur les tables métier et de synchronisation. Cette mesure ne remplace pas l'autorisation Fastify : elle évite qu'une exposition accidentelle aux rôles clients transforme le schéma en voie d'accès aux données. Le modèle d'autorisation métier est désormais défini côté Fastify ; aucune politique RLS client supplémentaire n'est ajoutée à ce stade.
 
 ## Non décidé
 
@@ -101,7 +101,7 @@ Le backend utilise `pg` et le Supavisor Transaction Pooler. Le pool est limité 
 
 Le choix de `pg` remplace `postgres.js` pour éviter le risque de pipelining avec le pooler transactionnel partagé, qui serait particulièrement problématique pour les transactions atomiques du protocole de synchronisation.
 
-Le recours à un rôle PostgreSQL dédié à privilèges minimaux est une décision validée en 7G ; sa mise en œuvre est différée jusqu'à ce que les opérations SQL runtime réelles permettent d'établir une matrice de privilèges minimale et vérifiable. Elle est suivie par l'Issue #27.
+Le recours à un rôle PostgreSQL dédié à privilèges minimaux est une décision validée en 7G ; sa mise en œuvre reste différée jusqu'à ce que les opérations SQL runtime réelles permettent d'établir une matrice de privilèges minimale et vérifiable. Elle est suivie par l'Issue #27.
 
 
 ## CI Supabase et connectivité IPv4

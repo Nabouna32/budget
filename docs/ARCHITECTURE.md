@@ -247,7 +247,6 @@ Ne sont pas verrouillés par cette architecture :
 - règles de conflit par type d'entité ;
 - politique de rétention, compactage et purge du journal/tombstones ;
 - stratégie de backoff/retry détaillée ;
-- pagination et taille maximale des lots ;
 - détails complémentaires du catalogue d'erreurs au-delà de l'enveloppe commune ;
 - versions exactes des dépendances et SDK ;
 - traitements durables, files de travail ou autres composants d'exécution à ajouter si les besoins futurs le justifient.
