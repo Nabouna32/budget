@@ -159,7 +159,7 @@ last_server_revision = 102
 
 Le client demande ensuite les changements postérieurs à ce curseur via l'opération de **pull** du protocole. Le contrat HTTP V1 utilise `POST /sync/pull`. La requête porte au minimum un `cursor` et une limite de lot ; la réponse contient `changes`, `next_cursor` et `has_more`.
 
-Le serveur filtre les changements avant de les inclure dans `changes`. Le curseur reste une position dans le journal global et peut donc franchir des révisions invisibles.
+Le serveur filtre les changements avant de les inclure dans `changes`. Ce filtrage applique l'autorisation en couches : membre actif de l'espace, permission liée au rôle, accès à la source via `AccountParticipation`, sélection budgétaire lorsque nécessaire, puis politique de visibilité. Une politique `SHARED` ou un override transactionnel ne peut jamais créer un droit d'accès absent d'une couche supérieure. Le curseur reste une position dans le journal global et peut donc franchir des révisions invisibles.
 
 Le client ne doit avancer son curseur qu'après avoir appliqué tout le lot avec succès dans sa base locale.
 
