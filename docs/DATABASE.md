@@ -433,7 +433,7 @@ Aucune donnée financière réelle ne doit apparaître dans :
 ## Non décidé
 
 - stratégie de rétention et d'audit ;
-- rôles et permissions détaillés ;
+- règles détaillées d'autorisation par opération et par type d'entité ;
 - taxonomie définitive des catégories ;
 - protocole API détaillé ;
 - règles de conflit par type d'entité ;
