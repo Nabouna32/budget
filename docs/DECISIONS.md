@@ -55,7 +55,7 @@ L'offline-first est nécessaire pour que l'application reste utile en l'absence 
 - Le backend et les contrats de données doivent rester indépendants d'Android.
 - La conception du modèle de données doit intégrer la synchronisation dès le départ.
 - Le protocole de synchronisation détaillé et les règles métier de conflit restent des décisions ultérieures.
-- Les choix de fournisseur cloud et les versions exactes des outils ne sont pas verrouillés par cette décision.
+- Les choix de fournisseur cloud sont désormais verrouillés pour V1 par une décision distincte du 2026-10-07 ; les versions exactes des outils ne sont pas encore fixées.
 
 ### Statut
 

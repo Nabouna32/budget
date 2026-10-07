@@ -151,10 +151,8 @@ L'architecture logique est obligatoire dès V1, mais le découpage en modules Gr
 
 Ne sont pas verrouillés par cette architecture :
 
-- fournisseur d'hébergement ;
-- framework backend précis ;
 - bibliothèque HTTP Android précise ;
-- stratégie d'authentification détaillée ;
-- protocole de synchronisation détaillé ;
-- règles métier définitives de résolution de chaque type de conflit ;
-- versions exactes des dépendances et SDK.
+- parcours d'authentification détaillé : durée de vie des sessions, renouvellement, révocation et déconnexion ;
+- protocole de synchronisation détaillé et ses règles de résolution des conflits ;
+- versions exactes des dépendances et SDK ;
+- traitements durables, files de travail ou autres composants d'exécution à ajouter si les besoins futurs le justifient.
