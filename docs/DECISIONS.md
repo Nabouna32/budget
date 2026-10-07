@@ -621,3 +621,51 @@ Le choix retenu est donc une atomicité **par mutation**, tout en conservant l'a
 ### Statut
 
 **Validée et documentée.**
+
+
+## 2026-10-07 — Modèle d'autorisation, rôles et visibilité V1
+
+### Décision
+
+Le modèle d'autorisation V1 sépare explicitement :
+
+1. l'identité de l'utilisateur ;
+2. l'appartenance à l'espace ;
+3. la permission d'opération dérivée du rôle ;
+4. la participation de la source financière ;
+5. la sélection de la source dans un budget ;
+6. la politique de visibilité.
+
+Les rôles d'espace V1 sont :
+
+- `OWNER` : contrôle de l'espace et de sa configuration dans les limites du modèle ;
+- `EDITOR` : opérations financières autorisées dans son périmètre ;
+- `VIEWER` : consultation uniquement.
+
+Le rôle `OWNER` appartient à l'espace et ne transfère jamais la propriété des comptes des autres membres.
+
+Les statuts de membre V1 sont `ACTIVE`, `INVITED`, `SUSPENDED` et `REMOVED`. Seul un membre `ACTIVE` peut accéder aux données selon les autres règles applicables.
+
+Les politiques de visibilité utilisent `PRIVATE`, `SHARED` et `INHERIT`. `AccountParticipation.visibility_policy` porte la règle de source dans un espace et `Transaction.visibility_override` peut la surcharger sans jamais créer un droit d'accès qui n'existe pas déjà.
+
+Une sélection dans `BudgetAccountSelection` filtre le périmètre d'un budget ; elle n'accorde pas à elle seule un droit d'accès.
+
+La suppression de données financières appartenant à un autre utilisateur est interdite par défaut pour `EDITOR`.
+
+### Challenge
+
+Un RBAC générique avec une liste de permissions indépendante du contexte aurait confondu rôle, propriété, participation et confidentialité. Il aurait également facilité l'exposition involontaire de données financières par le Sync.
+
+Le modèle retenu conserve donc une autorisation en couches. Chaque couche peut restreindre l'accès, mais aucune couche de visibilité ne peut contourner une interdiction d'accès supérieure.
+
+### Conséquences
+
+- Fastify reste l'autorité d'autorisation et de confidentialité.
+- Le Sync applique les mêmes contrôles avant transmission, y compris pour les suppressions, retries et agrégats.
+- `OWNER` ne doit jamais être interprété comme propriétaire de tous les comptes d'un espace.
+- Les règles détaillées par opération et type d'entité restent à implémenter et à tester dans l'API.
+- Cette matrice servira de base à la définition future du rôle PostgreSQL runtime à privilèges minimaux.
+
+### Statut
+
+**Validée et documentée.**
