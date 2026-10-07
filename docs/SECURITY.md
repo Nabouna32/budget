@@ -30,15 +30,15 @@ Le backend est responsable des contrôles serveur nécessaires avant lecture ou 
 
 Le backend V1 est une API **Fastify / TypeScript** déployée sur **Vercel Functions / Fluid Compute**. **Supabase Auth** fournit l'identité et les jetons d'accès.
 
-Le backend doit vérifier le JWT avant toute opération protégée et utiliser son `sub` comme identifiant de l'utilisateur authentifié. L'autorisation ne doit jamais être déduite d'informations contrôlées par le client.
+La vérification des JWT est implémentée côté backend avec `@supabase/supabase-js` et `auth.getClaims()`. Toute route protégée doit utiliser le hook d'authentification Fastify avant son traitement métier. L'identité applicative est dérivée du `sub` vérifié du JWT. L'autorisation ne doit jamais être déduite d'informations contrôlées par le client.
 
-La vérification des signatures JWT doit privilégier les clés publiques/JWKS publiées par Supabase. Aucun secret de signature ne doit être embarqué dans l'application Android.
+La vérification des signatures JWT doit privilégier les clés publiques/JWKS publiées par Supabase. Aucun secret de signature ne doit être embarqué dans l'application Android. Le backend n'utilise pas de clé `service_role` pour vérifier les JWT : la clé publishable est suffisante pour l'appel Auth utilisé ici.
 
 Le backend reste la seule frontière applicative vers PostgreSQL. Le client Android ne doit pas utiliser directement la Data API Supabase pour les données métier.
 
 Les tables PostgreSQL V1 résident dans `public` mais ont RLS activé comme défense en profondeur. Aucune politique d'accès client n'est encore définie : l'autorisation métier reste exclusivement portée par Fastify. Le backend utilisera à terme un rôle PostgreSQL runtime dédié à privilèges minimaux, séparé du rôle de migration/administration. Cette décision est validée ; la mise en œuvre est différée jusqu'à l'identification des opérations SQL runtime réelles.
 
-Les détails de durée de vie des sessions, renouvellement, révocation et déconnexion seront définis lors de l'implémentation de l'authentification.
+La vérification du jeton côté backend est implémentée. Le cycle de vie des sessions côté client — durée de vie, renouvellement, révocation et déconnexion — reste ouvert et est suivi par l'Issue #15.
 
 ## Stockage local
 
@@ -86,7 +86,7 @@ La migration PostgreSQL V1 active RLS sur les tables métier et de synchronisati
 
 ## Non décidé
 
-- parcours détaillé des sessions/tokens : durée de vie, renouvellement, révocation et déconnexion ;
+- cycle de vie détaillé des sessions/tokens côté client : durée de vie, renouvellement, révocation et déconnexion (Issue #15) ;
 - chiffrement local détaillé ;
 - gestion des clés ;
 - politique de sauvegarde ;

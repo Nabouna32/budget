@@ -73,7 +73,9 @@ Le client Android obtient un jeton d'accès après authentification. Le backend 
 
 La vérification doit privilégier les clés publiques/JWKS de Supabase plutôt que de placer inutilement un secret de signature dans le client ou dans un flux applicatif.
 
-Les détails du parcours de connexion, du renouvellement de session, de l'expiration et de la révocation restent à préciser lors de l'implémentation de l'authentification.
+Le backend implémente maintenant la vérification des jetons d'accès Supabase avec `@supabase/supabase-js`. Le client serveur utilise uniquement l'URL Supabase et la clé publishable, avec la persistance et le renouvellement de session désactivés : le backend ne gère pas la session cliente et vérifie chaque jeton reçu dans `Authorization: Bearer <JWT>` avec `auth.getClaims()`. L'identité applicative dérivée est limitée au `sub` vérifié et, lorsqu'il est présent, au `session_id` ; ces valeurs ne sont pas journalisées. Aucun `service_role` ni secret de signature JWT n'est utilisé par le backend.
+
+Le cycle de vie des sessions côté client — durée de vie, renouvellement, révocation et déconnexion — reste une décision distincte suivie par l'Issue #15.
 
 ### Principe de coût
 
@@ -242,7 +244,7 @@ L'architecture logique est obligatoire dès V1, mais le découpage en modules Gr
 Ne sont pas verrouillés par cette architecture :
 
 - bibliothèque HTTP Android précise ;
-- parcours d'authentification détaillé : durée de vie des sessions, renouvellement, révocation et déconnexion ;
+- cycle de vie des sessions côté client : durée de vie, renouvellement, révocation et déconnexion (Issue #15) ;
 - DTO complets et routes métier détaillées des Business API ;
 - règles de conflit par type d'entité ;
 - politique de rétention, compactage et purge du journal/tombstones ;
