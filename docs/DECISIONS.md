@@ -385,7 +385,7 @@ Le `POST` pour le pull permet un payload structuré. La portée `(user_id, mutat
 
 - Les futurs clients doivent respecter le même contrat public de synchronisation.
 - Le backend doit authentifier chaque requête protégée et appliquer l'autorisation avant transmission.
-- Les détails de conflit par entité, DTO complets, limites de lots, retry/backoff et routes métier restent ouverts.
+- Les DTO complets par entité, les règles de conflit, le retry/backoff détaillé et les routes métier restent ouverts ; les enveloppes HTTP, les limites de lots, la pagination par curseur et la classification de base des erreurs de transport sont définies dans le protocole V1.
 - L'implémentation peut choisir librement sa structure Fastify, ses repositories et son schéma SQL tant que les garanties publiques sont respectées.
 
 ### Statut
@@ -583,3 +583,41 @@ Le runtime Fastify constitue la frontière d'autorisation applicative, mais un c
 ### Statut
 
 **Validée — mise en œuvre différée.**
+
+
+## 2026-10-07 — Détails de transport du Sync API V1
+
+### Décision
+
+Le protocole HTTP V1 de synchronisation fixe désormais ses enveloppes de transport et leur sémantique de base :
+
+- `POST /sync/push` reçoit un tableau de `1` à `100` mutations et retourne un résultat par mutation ;
+- `POST /sync/pull` reçoit un `cursor` et une `limit` comprise entre `1` et `100`, avec une valeur par défaut de `100` ;
+- le pull avance sur le journal global et peut franchir des révisions invisibles après filtrage serveur ;
+- un lot de push est une enveloppe de transport et non une transaction métier globale ;
+- chaque mutation est traitée atomiquement et indépendamment des autres mutations du lot ;
+- une mutation logique multi-objet conserve une atomicité interne lorsque ses invariants l'exigent ;
+- les erreurs de transport suivent une classification HTTP minimale et les conflits/refus/erreurs transitoires d'une mutation valide restent des résultats par mutation ;
+- une réponse perdue ou une incertitude réseau ne permet pas de conclure qu'une mutation n'a pas été appliquée : le retry conserve le même `mutation_id`.
+
+### Contexte
+
+Le contrat public V1 avait fixé les routes, l'authentification, l'idempotence et le principe de pull par curseur, mais laissait ouverts plusieurs détails de transport nécessaires avant l'implémentation du Sync API.
+
+### Challenge et alternative retenue
+
+Une atomicité de batch complète aurait couplé des mutations indépendantes : un conflit ou une erreur sur une mutation aurait empêché la progression des autres et rendu la file offline plus difficile à reprendre.
+
+Le choix retenu est donc une atomicité **par mutation**, tout en conservant l'atomicité PostgreSQL à l'intérieur d'une mutation logique multi-objet. Cela limite le couplage entre opérations indépendantes sans affaiblir les invariants métier.
+
+### Conséquences
+
+- Le client doit conserver et rejouer individuellement les mutations ayant un statut retryable ou non résolu.
+- Le serveur doit retourner des résultats corrélés par `mutation_id`.
+- Les dépendances métier entre mutations distinctes ne peuvent pas être supposées implicitement à partir de leur ordre dans un batch.
+- Les règles de conflit par entité, le backoff/retry détaillé, les DTO métier complets et les dépendances explicites entre mutations restent à définir avant leur implémentation.
+- Les limites `100` sont des limites V1 susceptibles d'être réévaluées par une décision ultérieure si les mesures réelles le justifient.
+
+### Statut
+
+**Validée et documentée.**

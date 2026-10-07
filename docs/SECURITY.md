@@ -72,7 +72,7 @@ Le principe global « dernier écrit gagne » n'est pas utilisé pour les donné
 
 Le contrat API impose une enveloppe d'erreur commune. Les réponses de conflit peuvent exposer l'identifiant de mutation, l'identifiant d'entité et la version courante nécessaires au traitement du conflit, mais ne doivent pas renvoyer automatiquement la représentation courante d'une entité. Le client récupère ensuite l'état autorisé par le pull normal.
 
-L'idempotence des mutations est scoped par `(user_id, mutation_id)). Cette portée empêche qu'une connaissance accidentelle d'un `mutation_id` permette de réutiliser ou consulter le résultat d'une mutation appartenant à un autre utilisateur.
+L'idempotence des mutations est scoped par `(user_id, mutation_id)`. Cette portée empêche qu'une connaissance accidentelle d'un `mutation_id` permette de réutiliser ou consulter le résultat d'une mutation appartenant à un autre utilisateur.
 
 ## Secrets
 
@@ -101,7 +101,7 @@ Le backend utilise `pg` et le Supavisor Transaction Pooler. Le pool est limité 
 
 Le choix de `pg` remplace `postgres.js` pour éviter le risque de pipelining avec le pooler transactionnel partagé, qui serait particulièrement problématique pour les transactions atomiques du protocole de synchronisation.
 
-Le recours à un rôle PostgreSQL dédié à privilèges minimaux reste à étudier séparément avant d'introduire des privilèges plus fins.
+Le recours à un rôle PostgreSQL dédié à privilèges minimaux est une décision validée en 7G ; sa mise en œuvre est différée jusqu'à ce que les opérations SQL runtime réelles permettent d'établir une matrice de privilèges minimale et vérifiable. Elle est suivie par l'Issue #27.
 
 
 ## CI Supabase et connectivité IPv4

@@ -431,7 +431,6 @@ Aucune donnée financière réelle ne doit apparaître dans :
 - règles de conflit par type d'entité ;
 - invariants financiers complexes et éventuels triggers ;
 - règles métier de devises et précision ;
-- rôle PostgreSQL runtime dédié à privilèges minimaux, avec séparation du rôle de migration/administration ;
 
 ## Outillage PostgreSQL V1
 
