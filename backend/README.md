@@ -17,7 +17,7 @@ This skeleton intentionally contains only:
 - a minimal server entry point;
 - a first executable HTTP test.
 
-Business APIs, Supabase authentication, PostgreSQL access and synchronization are not implemented in this step.
+Business APIs, Supabase authentication, PostgreSQL runtime access and synchronization are not implemented in this step. Supabase migration tooling is initialized at repository root.
 
 ## Local development
 
