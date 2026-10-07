@@ -232,3 +232,57 @@ La séparation des relations évite de dupliquer les données financières et re
 ### Statut
 
 **Validée.**
+
+
+---
+
+## 2026-10-07 — Backend V1, PostgreSQL, authentification et hébergement
+
+### Décision
+
+Le backend V1 sera une API **TypeScript + Fastify**, déployée sur **Vercel Functions / Fluid Compute**.
+
+La persistance distante V1 utilisera **Supabase PostgreSQL** et **Supabase Auth** fournira l'identité utilisateur et les jetons d'accès.
+
+Le chemin applicatif de référence est :
+
+```text
+Android
+  ↓ HTTPS + JWT
+Vercel / Fastify API
+  ↓ serveur uniquement
+Supabase PostgreSQL
+
+Supabase Auth
+  └── identité / JWT
+```
+
+Android n'accède jamais directement à PostgreSQL et n'utilise pas directement la Data API Supabase pour contourner le backend métier.
+
+Le backend porte l'authentification de la requête, l'autorisation, la confidentialité, la validation métier et la future synchronisation.
+
+Le backend vérifie le JWT et dérive l'identité authentifiée de son `sub`. La vérification des signatures privilégiera les clés publiques/JWKS de Supabase.
+
+### Contexte
+
+Le projet doit pouvoir commencer avec un budget très limité. Supabase est déjà connu et utilisé sur un autre projet, et Vercel permet d'héberger l'API sans serveur permanent.
+
+La compatibilité Vercel + Fastify a été vérifiée. Le modèle Functions convient aux requêtes API et traitements courts. Les traitements longs ou durables feront l'objet d'une décision séparée.
+
+### Raisons
+
+La séparation Vercel / Fastify / Supabase conserve une frontière backend explicite et centralise les règles métier, l'autorisation, la confidentialité et la future synchronisation.
+
+Le choix suit un principe **Free-first mais pas Free-dependent** : le démarrage doit rester gratuit ou très peu coûteux sans rendre l'architecture dépendante des limites gratuites.
+
+### Conséquences
+
+- PostgreSQL reste derrière le backend, même s'il est fourni par Supabase.
+- Supabase Auth est la source d'identité V1.
+- Les Functions Vercel ne doivent pas contenir d'état métier critique en mémoire.
+- Les détails de session, révocation, protocole de synchronisation et traitements asynchrones restent à définir.
+- L'infrastructure pourra évoluer vers des offres payantes ou d'autres composants si la croissance du produit le nécessite.
+
+### Statut
+
+**Validée.**

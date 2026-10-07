@@ -8,7 +8,9 @@ Le schéma PostgreSQL concret, les migrations et les index définitifs restent �
 
 ## PostgreSQL
 
-PostgreSQL est la cible de persistance distante.
+**Supabase PostgreSQL** est la cible de persistance distante V1. Supabase fournit PostgreSQL comme stockage persistant ; il ne remplace pas la frontière backend définie par l'architecture.
+
+L'API Fastify hébergée sur Vercel est le seul point d'accès applicatif prévu aux données métier distantes. Android ne doit pas accéder directement à PostgreSQL ni contourner l'API via la Data API Supabase.
 
 Les clients n'y accèdent jamais directement. Les accès passent par le backend afin de centraliser :
 
@@ -373,7 +375,6 @@ Aucune donnée financière réelle ne doit apparaître dans :
 ## Non décidé
 
 - schéma SQL physique définitif ;
-- hébergeur PostgreSQL ;
 - stratégie exacte de migrations ;
 - index définitifs ;
 - type SQL exact des montants ;

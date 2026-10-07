@@ -8,7 +8,7 @@ Le modèle métier détaillé doit être synchronisable sans dépendre d'une UI 
 
 ## Objectif
 
-Permettre à Android de fonctionner localement sans réseau tout en synchronisant ses données de manière bidirectionnelle avec PostgreSQL via un backend. L'architecture doit également permettre l'ajout ultérieur de clients Web, iOS ou desktop.
+Permettre à Android de fonctionner localement sans réseau tout en synchronisant ses données de manière bidirectionnelle avec **Supabase PostgreSQL via l'API Fastify**. L'architecture doit également permettre l'ajout ultérieur de clients Web, iOS ou desktop.
 
 ## Modèle offline-first
 
@@ -175,15 +175,19 @@ Le modèle physique pourra toutefois associer aux entités les informations de v
 
 ## Frontière serveur
 
-Android ne communique jamais directement avec PostgreSQL.
+Android ne communique jamais directement avec PostgreSQL ni avec la Data API Supabase pour les opérations métier.
 
 ```
-Client
-  ↓ HTTPS / API
-Backend
-  ↓
-PostgreSQL
+Client Android
+  ↓ HTTPS + JWT
+Vercel / Fastify API
+  ↓ serveur uniquement
+Supabase PostgreSQL
 ```
+
+Le backend authentifie la requête, détermine l'utilisateur à partir du JWT, applique les règles d'autorisation et de confidentialité, puis exécute les opérations métier. Le protocole de synchronisation détaillé sera conçu dans l'étape dédiée suivante.
+
+Vercel Functions étant stateless, l'état de synchronisation durable doit rester dans PostgreSQL et/ou dans les mécanismes persistants explicitement retenus ; il ne doit pas dépendre de la mémoire d'une instance.
 
 Cette frontière permet d'ajouter d'autres clients sans reproduire la logique d'accès aux données ou les règles de sécurité.
 

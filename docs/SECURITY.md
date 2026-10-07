@@ -8,19 +8,35 @@ Les données budgétaires et financières sont sensibles. La sécurité doit êt
 
 ## Frontière de confiance
 
-BTBTBT
+```text
 Android
-   │ HTTPS
+   │ HTTPS + JWT
    ▼
-Backend
+Vercel / Fastify API
+   │ serveur uniquement
+   ▼
+Supabase PostgreSQL
+
+Supabase Auth
    │
-   ▼
-PostgreSQL
-BTBTBT
+   └── identité / JWT
+```
 
 Android ne dispose pas d'un accès direct à PostgreSQL.
 
 Le backend est responsable des contrôles serveur nécessaires avant lecture ou mutation des données.
+
+## Backend et authentification
+
+Le backend V1 est une API **Fastify / TypeScript** déployée sur **Vercel Functions / Fluid Compute**. **Supabase Auth** fournit l'identité et les jetons d'accès.
+
+Le backend doit vérifier le JWT avant toute opération protégée et utiliser son `sub` comme identifiant de l'utilisateur authentifié. L'autorisation ne doit jamais être déduite d'informations contrôlées par le client.
+
+La vérification des signatures JWT doit privilégier les clés publiques/JWKS publiées par Supabase. Aucun secret de signature ne doit être embarqué dans l'application Android.
+
+Le backend reste la seule frontière applicative vers PostgreSQL. Le client Android ne doit pas utiliser directement la Data API Supabase pour les données métier.
+
+Les détails de durée de vie des sessions, renouvellement, révocation et déconnexion seront définis lors de l'implémentation de l'authentification.
 
 ## Stockage local
 
@@ -51,4 +67,4 @@ Les environnements de développement et de production doivent séparer leurs sec
 - chiffrement local détaillé ;
 - gestion des clés ;
 - politique de sauvegarde ;
-- hébergeur et contrôles de sécurité associés.
+- contrôles de sécurité Vercel/Supabase spécifiques à l'implémentation ;
