@@ -78,7 +78,7 @@ L'idempotence des mutations est scoped par `(user_id, mutation_id)). Cette port�
 
 Les secrets et credentials ne doivent jamais être commités dans le dépôt.
 
-Les environnements de développement et de production doivent séparer leurs secrets. Le workflow GitHub Actions de migrations utilise le secret `SUPABASE_ACCESS_TOKEN`, qui doit rester exclusivement dans GitHub Secrets et ne jamais être affiché ou commité.
+Les environnements de développement et de production doivent séparer leurs secrets. Le workflow GitHub Actions de migrations utilise les secrets `SUPABASE_ACCESS_TOKEN` et `SUPABASE_DB_PASSWORD`, qui doivent rester exclusivement dans GitHub Secrets et ne jamais être affichés ou committés.
 
 ## Base de données et défense en profondeur
 
