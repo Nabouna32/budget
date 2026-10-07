@@ -368,6 +368,10 @@ Cela évite notamment :
 
 Les transactions impliquant plusieurs objets liés doivent également préserver les invariants métier. Une transaction et ses `TransactionLine`, par exemple, doivent être modifiées atomiquement lorsque la mutation les concerne ensemble.
 
+## Contrat DTO métier
+
+Le catalogue précis des opérations, payloads, validations structurelles et erreurs métier est désormais défini dans [docs/SYNC-API.md](SYNC-API.md). Ce document reste la référence d'architecture du protocole ; SYNC-API.md est la référence contractuelle pour les DTO.
+
 ## Conflits
 
 Le principe **« dernier écrit gagne » n'est pas retenu comme règle générale V1**.
@@ -487,12 +491,10 @@ Cette frontière permet d'ajouter d'autres clients sans reproduire la logique d'
 
 Restent à définir :
 
-- schéma physique exact des DTO métier et des payloads `payload` par entité ;
 - règles de conflit par type d'entité ;
 - politique de rétention et de compactage des tombstones et du journal ;
 - stratégie de backoff/retry côté client ;
-- gestion précise des dépendances entre mutations distinctes ;
 - transport temps réel éventuel et son rôle par rapport au pull déterministe.
 
-Les limites et enveloppes HTTP V1, la sémantique d'atomicité par mutation, la pagination par curseur et la classification de base des erreurs de transport sont désormais définies ci-dessus. Les éléments métier encore ouverts restent suivis par les Issues correspondantes et ne doivent pas être inventés par la couche HTTP.
+Les limites et enveloppes HTTP V1, les DTO métier, le catalogue des mutations, la validation structurelle, la sémantique d'atomicité par mutation, la pagination par curseur et la classification de base des erreurs de transport sont désormais définis dans ce document et dans SYNC-API.md. Les règles de conflit, la rétention, le retry/backoff et les autres décisions explicitement suivies par les Issues restent hors de ce contrat.
 

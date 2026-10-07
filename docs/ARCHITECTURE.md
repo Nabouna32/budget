@@ -219,7 +219,7 @@ Les messages d'erreur ne doivent pas divulguer de données financières, de cont
 
 En cas de conflit, la réponse peut indiquer l'identifiant de mutation, l'entité concernée et la version courante, mais **ne renvoie pas automatiquement la représentation courante de l'entité**. Le client récupère ensuite l'état autorisé via le pull normal. Cela évite une voie de fuite de données et maintient une seule mécanique de lecture synchronisée.
 
-Le contrat public fixe ces garanties sans figer prématurément les DTO complets de chaque entité, les règles de conflit propres à chaque type, la pagination définitive ou les détails internes de persistance.
+Le contrat public fixe ces garanties. Les DTO et mutations V1 sont définis dans docs/SYNC-API.md. Les règles de conflit propres à chaque type et les détails internes de persistance restent séparés du contrat HTTP.
 
 ## Extensibilité multiplateforme
 
@@ -245,11 +245,10 @@ Ne sont pas verrouillés par cette architecture :
 
 - bibliothèque HTTP Android précise ;
 - cycle de vie des sessions côté client : durée de vie, renouvellement, révocation et déconnexion (Issue #15) ;
-- DTO complets et routes métier détaillées des Business API ;
+- routes métier détaillées des Business API ;
 - règles de conflit par type d'entité ;
 - politique de rétention, compactage et purge du journal/tombstones ;
 - stratégie de backoff/retry détaillée ;
-- détails complémentaires du catalogue d'erreurs au-delà de l'enveloppe commune ;
 - versions exactes des dépendances et SDK ;
 - traitements durables, files de travail ou autres composants d'exécution à ajouter si les besoins futurs le justifient.
 
