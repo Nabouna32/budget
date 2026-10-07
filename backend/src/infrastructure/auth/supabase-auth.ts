@@ -50,9 +50,14 @@ export function createAccessTokenVerifier(
   return {
     async verify(accessToken: string): Promise<AuthenticatedIdentity> {
       const { data, error } = await client.auth.getClaims(accessToken);
-      const userId = data?.claims?.sub;
 
-      if (error || typeof userId !== "string" || userId.length === 0) {
+      if (error || !data?.claims) {
+        throw new Error("Invalid access token");
+      }
+
+      const userId = data.claims.sub;
+
+      if (typeof userId !== "string" || userId.length === 0) {
         throw new Error("Invalid access token");
       }
 
