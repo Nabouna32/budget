@@ -117,6 +117,14 @@ Les mécanismes précis de protection du stockage restent à définir dans les c
 
 Le backend constitue la frontière d'accès aux données distantes.
 
+V1 utilise **Vercel** pour l'exécution de l'API Fastify et **Supabase** pour PostgreSQL et l'identité via Supabase Auth.
+
+Cette utilisation de fournisseurs externes ne change pas la responsabilité du backend : les règles d'autorisation, de confidentialité et de filtrage des données financières restent appliquées par l'API avant transmission au client.
+
+Android ne doit pas envoyer de données métier directement à la Data API Supabase. Les flux applicatifs passent par l'API Fastify.
+
+Les choix Vercel + Supabase suivent un principe **Free-first mais pas Free-dependent** : l'usage des offres gratuites est une contrainte de coût initial, pas une justification pour diminuer les garanties de confidentialité ou de sécurité. Une évolution vers des offres payantes ou d'autres composants pourra être décidée si nécessaire.
+
 Les futurs fournisseurs et services externes seront évalués avant introduction, notamment sur :
 
 - les données qu'ils peuvent recevoir ;
@@ -141,5 +149,5 @@ Les logs de développement ne doivent pas permettre de reconstruire la situation
 - analytics éventuels ;
 - télémétrie éventuelle ;
 - sauvegardes et exports ;
-- fournisseurs de services externes ;
+- fournisseurs de services externes supplémentaires ;
 - protections précises du stockage local Android.
