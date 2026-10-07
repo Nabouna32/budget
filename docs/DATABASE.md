@@ -431,7 +431,7 @@ Aucune donnée financière réelle ne doit apparaître dans :
 - règles de conflit par type d'entité ;
 - invariants financiers complexes et éventuels triggers ;
 - règles métier de devises et précision ;
-- rôle PostgreSQL dédié à privilèges minimaux ;
+- rôle PostgreSQL runtime dédié à privilèges minimaux, avec séparation du rôle de migration/administration ;
 
 ## Outillage PostgreSQL V1
 
@@ -449,7 +449,7 @@ Le pool est créé à la demande et reste local à l'instance stateless ; aucune
 
 `pg` a été retenu à la place de `postgres.js` après vérification de la compatibilité avec Supavisor Transaction Pooler : Postgres.js pipeline les requêtes par défaut et sa combinaison avec le pooler transactionnel partagé peut provoquer des blocages ou des résultats associés à la mauvaise requête. Cette propriété est incompatible avec la criticité des transactions atomiques prévues pour la synchronisation V1.
 
-Le rôle PostgreSQL dédié avec privilèges minimaux reste une évolution de sécurité séparée : pour V1, le secret de connexion reste uniquement côté backend et l'autorisation métier reste portée par Fastify.
+Le runtime PostgreSQL utilisera à terme un rôle dédié à privilèges minimaux, séparé du rôle de migration/administration. Cette décision est validée en 7G, mais sa mise en œuvre est volontairement différée jusqu'à ce que les opérations SQL runtime réelles permettent de déterminer précisément les privilèges nécessaires. Le secret de connexion reste uniquement côté backend et l'autorisation métier reste portée par Fastify.
 
 La migration initiale de schéma métier et de synchronisation reste la source de vérité versionnée dans ce répertoire. L'état distant est désormais réconcilié avec son historique Supabase.
 
