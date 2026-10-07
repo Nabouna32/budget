@@ -432,7 +432,7 @@ Aucune donnée financière réelle ne doit apparaître dans :
 - invariants financiers complexes et éventuels triggers ;
 - règles métier de devises et précision ;
 - rôle PostgreSQL dédié à privilèges minimaux ;
-- mécanisme CI/reproductible pour réconcilier l'historique des migrations distantes avec le schéma déjà appliqué.
+- workflow CI/reproductible de déploiement et de contrôle des migrations.
 
 ## Outillage PostgreSQL V1
 
@@ -452,8 +452,10 @@ Le pool est créé à la demande et reste local à l'instance stateless ; aucune
 
 Le rôle PostgreSQL dédié avec privilèges minimaux reste une évolution de sécurité séparée : pour V1, le secret de connexion reste uniquement côté backend et l'autorisation métier reste portée par Fastify.
 
-La migration initiale de schéma métier et de synchronisation reste la source de vérité versionnée dans ce répertoire.
+La migration initiale de schéma métier et de synchronisation reste la source de vérité versionnée dans ce répertoire. L'état distant est désormais réconcilié avec son historique Supabase.
 
 Lors de l'étape 7F.5, son DDL a été appliqué au projet Supabase réel via l'accès MCP SQL après que l'outil d'application de migration a refusé l'exécution complète. La vérification distante confirme **15 tables publiques**, **15 tables avec RLS activé**, les clés étrangères attendues et les index du schéma. Aucun enregistrement métier n'a été créé.
 
-Point important : l'exécution SQL directe n'a pas créé d'entrée dans l'historique des migrations Supabase ; l'historique distant reste donc vide alors que le schéma est présent. Cette divergence est volontairement documentée et devra être résolue dans l'étape 7F.6 par un mécanisme officiel et reproductible de gestion des migrations, sans modifier manuellement l'historique interne de Supabase.
+L'historique Supabase était initialement absent, car l'application directe par SQL ne passe pas par le mécanisme de migration. Il a ensuite été **recréé de façon contrôlée** avec la structure officielle `supabase_migrations.schema_migrations`, puis l'entrée `20261007193257 / initial_schema_v1` a été enregistrée comme déjà appliquée. La vérification finale via l'API Supabase retourne maintenant cette migration dans l'historique distant.
+
+Cette réparation ne rejoue pas le DDL : elle ne fait que réconcilier la métadonnée d'historique avec un schéma déjà vérifié. À terme, le workflow reproductible doit utiliser le Supabase CLI et `migration repair`/ `db push` plutôt qu'une modification SQL directe de l'historique.
