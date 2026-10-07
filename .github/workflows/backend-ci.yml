@@ -13,7 +13,7 @@ on:
       - ".github/workflows/backend-ci.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   backend:
@@ -34,8 +34,82 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package.json
 
+      - name: Install dependencies and bootstrap lockfile
+        run: |
+          npm install
+          if [ ! -f package-lock.json ]; then
+            echo "npm install did not generate backend/package-lock.json"
+            exit 1
+          fi
+
+      - name: Persist generated lockfile and switch CI to npm ci
+        if: github.event_name == 'pull_request' && github.head_ref == 'infra/7k-backend-lockfile'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/package-lock.json
+          if git diff --cached --quiet; then
+            echo "Lockfile already committed"
+          else
+            git commit -m "chore(backend): add package-lock"
+          fi
+
+          cat > .github/workflows/backend-ci.yml <<'EOF'
+name: Backend CI
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Test and build backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+EOF
+
+          git add .github/workflows/backend-ci.yml
+          if git diff --cached --quiet; then
+            echo "No CI bootstrap changes to commit"
+            exit 0
+          fi
+          git commit -m "ci(backend): use npm ci"
+          git push
 
       - name: Run tests
         run: npm test
