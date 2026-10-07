@@ -2,7 +2,7 @@
 
 ## État
 
-**Principes d'architecture sécurité V1 validés le 2026-10-07.**
+**Principes d'architecture sécurité V1 et garanties de synchronisation V1 validés le 2026-10-07.**
 
 Les données budgétaires et financières sont sensibles. La sécurité doit être conçue autour de la séparation entre client, backend et base de données.
 
@@ -53,6 +53,20 @@ Les échanges distants doivent utiliser un transport sécurisé. Aucun secret, j
 Le mécanisme d'idempotence et de versionnement doit éviter qu'un retry réseau entraîne une double application d'une mutation.
 
 Les contrôles d'autorisation sont effectués côté serveur et ne doivent jamais dépendre uniquement de l'UI Android.
+
+## Synchronisation
+
+Le protocole de synchronisation V1 renforce plusieurs garanties de sécurité et d'intégrité :
+
+- les mutations utilisent un `mutation_id` stable afin qu'un retry ne puisse pas être interprété comme une nouvelle opération ;
+- les mutations de modification utilisent une version de base pour détecter les changements concurrents ;
+- le serveur attribue une révision persistante aux changements acceptés ;
+- les mutations, leur résultat d'idempotence et leur entrée de journal sont liés dans une transaction PostgreSQL atomique ;
+- les suppressions sont propagées via des tombstones persistants ;
+- le serveur filtre les changements selon les autorisations et politiques de confidentialité avant transmission au client ;
+- aucune règle de sécurité ne repose sur le masquage de données côté UI.
+
+Le principe global « dernier écrit gagne » n'est pas utilisé pour les données financières. Les conflits incompatibles doivent être détectés et traités explicitement.
 
 ## Secrets
 

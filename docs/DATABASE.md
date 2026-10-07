@@ -2,7 +2,7 @@
 
 ## État
 
-**Modèle métier détaillé V1 validé le 2026-10-07.**
+**Modèle métier détaillé V1 et architecture de synchronisation V1 validés le 2026-10-07.**
 
 Le schéma PostgreSQL concret, les migrations et les index définitifs restent à concevoir à partir de ce modèle et du contrat de synchronisation.
 
@@ -322,6 +322,43 @@ Les dates métier sont distinctes des timestamps techniques :
 
 Cette distinction doit être conservée dans le modèle local comme distant.
 
+## Synchronisation : infrastructure conceptuelle
+
+Les données métier et l'infrastructure de synchronisation sont séparées conceptuellement.
+
+```
+Données métier
+Account / Transaction / Category / ...
+
+Infrastructure
+PendingOperation
+SyncState
+ChangeJournal
+Tombstone
+MutationResult
+```
+
+Les concepts suivants sont nécessaires au protocole V1 :
+
+- **PendingOperation** côté client pour conserver les mutations locales non confirmées ;
+- **SyncState** côté client pour conserver notamment le curseur de dernière révision serveur appliquée ;
+- **ChangeJournal** côté serveur pour ordonner et rejouer les changements ;
+- **Tombstone** côté serveur pour propager les suppressions ;
+- **MutationResult** côté serveur pour reconnaître les retries via le `mutation_id` et restituer un résultat déjà traité.
+
+Le schéma physique exact, les clés, index, contraintes et éventuelle séparation entre journal et tombstones restent à définir lors de l'implémentation du backend.
+
+## Versionnement
+
+Le protocole distingue :
+
+- une **révision serveur globale monotone**, utilisée par le journal de synchronisation ;
+- une **version propre à chaque entité**, utilisée pour détecter les modifications concurrentes ;
+- un **mutation_id stable**, utilisé pour l'idempotence des mutations ;
+- un **curseur local**, utilisé pour reprendre le pull après interruption.
+
+Ces mécanismes ont des responsabilités distinctes et ne doivent pas être confondus.
+
 ## Intégrité
 
 Les données financières doivent être modélisées avec une attention particulière à :
@@ -378,9 +415,8 @@ Aucune donnée financière réelle ne doit apparaître dans :
 - stratégie exacte de migrations ;
 - index définitifs ;
 - type SQL exact des montants ;
-- mécanisme précis de versionnement ;
 - stratégie de rétention et d'audit ;
 - rôles et permissions détaillés ;
 - taxonomie définitive des catégories ;
-- protocole API et de synchronisation ;
+- protocole API détaillé ;
 - règles de conflit par type d'entité.

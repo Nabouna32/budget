@@ -286,3 +286,62 @@ Le choix suit un principe **Free-first mais pas Free-dependent** : le démarrage
 ### Statut
 
 **Validée.**
+
+
+---
+
+## 2026-10-07 — Protocole de synchronisation V1
+
+### Décision
+
+Le protocole de synchronisation V1 repose sur :
+
+- un **mutation_id stable** pour chaque mutation logique ;
+- une **révision serveur globale monotone** pour ordonner les changements ;
+- une **version par entité** pour détecter les modifications concurrentes ;
+- un **journal de changements persistant** côté serveur ;
+- un **curseur de pull** permettant une reprise déterministe ;
+- un **push idempotent** des opérations locales en attente ;
+- des **transactions PostgreSQL atomiques** couplant mutation métier, versionnement, journal et résultat d'idempotence ;
+- des **tombstones** pour propager les suppressions ;
+- une **détection explicite des conflits**, sans règle globale de Last-Write-Wins ;
+- un **filtrage serveur des changements** avant transmission selon les autorisations et politiques de confidentialité.
+
+Les détails d'API, les règles de conflit par entité, la rétention du journal et des tombstones, le backoff, la pagination et le temps réel restent des décisions d'implémentation ultérieures.
+
+### Contexte
+
+Le produit doit rester offline-first, supporter plusieurs clients et utilisateurs, survivre aux interruptions et retries, et éviter toute perte silencieuse de modifications financières. Vercel étant stateless, les informations nécessaires à la reprise doivent être persistées dans PostgreSQL et dans la base locale du client.
+
+### Alternatives considérées
+
+- synchronisation fondée uniquement sur `updated_at` et `updated_since` ;
+- Last-Write-Wins global ;
+- CRDT ;
+- event sourcing complet ;
+- vector clocks ;
+- horloges de Lamport ;
+- Merkle trees ;
+- synchronisation pair-à-pair.
+
+### Raisons
+
+Un simple delta basé sur `updated_at` ne fournit pas à lui seul une récupération déterministe robuste des suppressions, retries et changements concurrents.
+
+Un Last-Write-Wins global peut écraser silencieusement une modification financière.
+
+Les approches distribuées plus complexes apportent une capacité de convergence supérieure mais une complexité disproportionnée pour la V1. Le protocole retenu fournit des garanties fortes avec des primitives PostgreSQL et une persistance explicite de l'état.
+
+### Conséquences
+
+- Les clients doivent conserver un curseur de synchronisation et une file persistante de mutations en attente.
+- Le serveur doit conserver un journal de changements et les informations d'idempotence nécessaires.
+- Les entités synchronisables ont besoin d'un versionnement compatible avec la détection de conflits.
+- Les suppressions ne peuvent pas être de simples suppressions physiques immédiates si elles doivent être propagées aux clients obsolètes.
+- Le backend doit filtrer les changements avant transmission selon les droits et politiques de confidentialité.
+- Les conflits financiers incompatibles ne sont pas résolus silencieusement.
+- Le schéma SQL et le contrat API devront être dérivés de ces garanties sans figer prématurément leurs détails d'implémentation.
+
+### Statut
+
+**Validée.**
