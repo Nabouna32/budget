@@ -4,7 +4,7 @@
 
 **Modèle métier détaillé V1 et architecture de synchronisation V1 validés le 2026-10-07.**
 
-Le schéma PostgreSQL physique V1 est désormais matérialisé dans `supabase/migrations/20261007193257_initial_schema_v1.sql`. La migration est versionnée dans Git ; son application et sa vérification sur le projet Supabase restent prévues à l'étape 7F.5.
+Le schéma PostgreSQL physique V1 est désormais matérialisé dans `supabase/migrations/20261007193257_initial_schema_v1.sql`. La migration est versionnée dans Git et son application sur le projet Supabase réel a été vérifiée lors de l'étape 7F.5.
 
 ## PostgreSQL
 
@@ -432,7 +432,6 @@ Aucune donnée financière réelle ne doit apparaître dans :
 - invariants financiers complexes et éventuels triggers ;
 - règles métier de devises et précision ;
 - rôle PostgreSQL dédié à privilèges minimaux ;
-- workflow CI/reproductible de déploiement et de contrôle des migrations.
 
 ## Outillage PostgreSQL V1
 
@@ -458,4 +457,13 @@ Lors de l'étape 7F.5, son DDL a été appliqué au projet Supabase réel via l'
 
 L'historique Supabase était initialement absent, car l'application directe par SQL ne passe pas par le mécanisme de migration. Il a ensuite été **recréé de façon contrôlée** avec la structure officielle `supabase_migrations.schema_migrations`, puis l'entrée `20261007193257 / initial_schema_v1` a été enregistrée comme déjà appliquée. La vérification finale via l'API Supabase retourne maintenant cette migration dans l'historique distant.
 
-Cette réparation ne rejoue pas le DDL : elle ne fait que réconcilier la métadonnée d'historique avec un schéma déjà vérifié. À terme, le workflow reproductible doit utiliser le Supabase CLI et `migration repair`/ `db push` plutôt qu'une modification SQL directe de l'historique.
+Cette réparation ne rejoue pas le DDL : elle ne fait que réconcilier la métadonnée d'historique avec un schéma déjà vérifié. Le workflow de déploiement normal utilise désormais le Supabase CLI et `supabase db push`; les modifications manuelles de l'historique ne constituent pas le chemin de déploiement.
+
+
+### Déploiement des migrations
+
+Les migrations de production sont appliquées automatiquement par GitHub Actions après un push sur `main` qui modifie `supabase/migrations/**`, `supabase/config.toml` ou le workflow de migrations.
+
+Le workflow `.github/workflows/supabase-migrations.yml` cible explicitement le projet Supabase de production, installe le Supabase CLI, effectue un `supabase db push --dry-run`, puis applique `supabase db push`. Les déploiements sont sérialisés et le workflow peut être relancé manuellement avec `workflow_dispatch`.
+
+L'authentification CI repose sur le secret GitHub `SUPABASE_ACCESS_TOKEN`. Sa valeur ne doit jamais être versionnée ou affichée dans les logs. Le token doit être un scoped Personal Access Token Supabase limité au projet et aux permissions nécessaires.
