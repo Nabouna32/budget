@@ -203,7 +203,9 @@ L'idempotence est scoped par le couple `(user_id, mutation_id)`. Le serveur doit
 
 Les résultats distinguent au minimum `APPLIED`, `ALREADY_PROCESSED`, `CONFLICT`, `REJECTED` et `RETRYABLE_ERROR`.
 
-Le serveur traite chaque mutation de manière idempotente et persistante.
+Le serveur traite chaque mutation de manière idempotente et persistante, **indépendamment des autres mutations du même lot**. Le lot est une enveloppe de transport et **ne constitue pas une transaction métier globale**.
+
+Une mutation logique qui implique plusieurs objets liés reste toutefois atomique en interne : elle doit être traitée dans une seule transaction PostgreSQL afin de préserver les invariants qu'elle concerne.
 
 Le protocole doit permettre de distinguer au minimum :
 
@@ -226,6 +228,119 @@ Le contrat utilise une enveloppe d'erreur commune :
 ```
 
 Les messages d'erreur ne doivent pas contenir de données financières ni révéler des informations permettant de contourner l'autorisation.
+
+## Contrat HTTP détaillé V1
+
+### Enveloppe de push
+
+`POST /sync/push` accepte une enveloppe :
+
+```json
+{
+  "mutations": [
+    {
+      "mutation_id": "...",
+      "operation": "UPDATE_TRANSACTION",
+      "entity_id": "...",
+      "base_version": 7,
+      "payload": {}
+    }
+  ]
+}
+```
+
+- `mutations` est obligatoire et contient entre `1` et `100` mutations.
+- Une mutation doit être autonome du point de vue du transport.
+- Les `mutation_id` sont uniques dans le contexte de l'utilisateur ; un même identifiant ne doit pas apparaître deux fois dans une même requête.
+- Le serveur traite les mutations individuellement. L'ordre du tableau ne constitue pas une dépendance métier implicite.
+- Une mutation multi-objet reste une seule unité logique et transactionnelle si ses invariants l'exigent.
+
+La réponse HTTP `200` contient un résultat par mutation, dans le même ordre :
+
+```json
+{
+  "results": [
+    {
+      "mutation_id": "...",
+      "status": "APPLIED",
+      "entity_id": "...",
+      "version": 8,
+      "server_revision": 153
+    }
+  ]
+}
+```
+
+Le champ `entity_id` est présent lorsqu'il est pertinent. `version` et `server_revision` sont présents lorsqu'une mutation a produit ou possède un résultat serveur correspondant. Pour `ALREADY_PROCESSED`, le serveur retourne le résultat durablement enregistré lors du traitement initial.
+
+Les statuts `CONFLICT`, `REJECTED` et `RETRYABLE_ERROR` sont des résultats **par mutation** et ne rendent pas invalides les autres mutations indépendantes du lot.
+
+### Enveloppe de pull
+
+`POST /sync/pull` accepte :
+
+```json
+{
+  "cursor": 152,
+  "limit": 100
+}
+```
+
+- `cursor` est une révision serveur entière supérieure ou égale à `0`.
+- `limit` est compris entre `1` et `100`.
+- Si `limit` est omis, la valeur `100` est utilisée.
+- Le serveur peut retourner moins de changements que `limit`, notamment à cause du filtrage de confidentialité.
+- `next_cursor` représente la position effectivement parcourue dans le journal global ; il peut donc avancer au-delà du dernier changement visible.
+
+La réponse est :
+
+```json
+{
+  "changes": [],
+  "next_cursor": 153,
+  "has_more": false
+}
+```
+
+Le client ne persiste `next_cursor` qu'après avoir appliqué transactionnellement l'intégralité de `changes`. Lorsque `has_more` vaut `true`, le client peut relancer le pull avec `next_cursor`.
+
+### Limites et erreurs de transport
+
+Les limites de lots sont des limites de protocole V1 :
+
+- push : maximum `100` mutations ;
+- pull : `limit` maximum `100`.
+
+Un dépassement de limite ou une enveloppe JSON invalide est une erreur de requête et ne déclenche pas de traitement partiel du lot concerné.
+
+Les erreurs HTTP de transport suivent au minimum cette sémantique :
+
+| HTTP | Signification | Retry |
+|---|---|---|
+| `400` | enveloppe ou paramètre invalide | non |
+| `401` | authentification absente ou invalide | non, sauf renouvellement du jeton |
+| `403` | opération non autorisée | non |
+| `413` | lot trop volumineux | non, réduire le lot |
+| `429` | limitation temporaire | oui |
+| `5xx` | erreur serveur/transitoire | oui |
+
+Les conflits, refus métier/intégrité et erreurs transitoires détectés **pour une mutation valide** sont retournés dans `results` avec leur statut propre plutôt que transformés en erreur HTTP globale.
+
+Une erreur HTTP de transport ne doit jamais être interprétée comme la preuve qu'une mutation n'a pas été appliquée. En cas de réponse perdue ou d'incertitude réseau après envoi, le client réessaie avec les mêmes `mutation_id` et s'appuie sur l'idempotence.
+
+Pour une erreur HTTP structurée, l'enveloppe commune reste :
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "...",
+    "retryable": true
+  }
+}
+```
+
+Les codes précis supplémentaires et les stratégies de backoff restent hors de cette étape et sont suivis par l'Issue #22.
 
 ## Atomicité serveur
 
@@ -370,16 +485,14 @@ Cette frontière permet d'ajouter d'autres clients sans reproduire la logique d'
 
 ## Non décidé
 
-Restent à définir lors de la conception détaillée du backend et de l'API :
+Restent à définir :
 
-- format exact des endpoints ;
-- format des payloads JSON ;
-- schéma physique exact des tables de synchronisation ;
+- schéma physique exact des DTO métier et des payloads `payload` par entité ;
 - règles de conflit par type d'entité ;
 - politique de rétention et de compactage des tombstones et du journal ;
-- stratégie de backoff et retry détaillée ;
-- pagination et taille maximale des lots ;
-- format détaillé des erreurs ;
-- gestion précise des opérations concurrentes ;
-- transport temps réel éventuel.
+- stratégie de backoff/retry côté client ;
+- gestion précise des dépendances entre mutations distinctes ;
+- transport temps réel éventuel et son rôle par rapport au pull déterministe.
+
+Les limites et enveloppes HTTP V1, la sémantique d'atomicité par mutation, la pagination par curseur et la classification de base des erreurs de transport sont désormais définies ci-dessus. Les éléments métier encore ouverts restent suivis par les Issues correspondantes et ne doivent pas être inventés par la couche HTTP.
 
