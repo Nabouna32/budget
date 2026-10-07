@@ -4,7 +4,7 @@
 
 **Modèle métier détaillé V1 et architecture de synchronisation V1 validés le 2026-10-07.**
 
-Le schéma PostgreSQL concret et les index définitifs restent à concevoir à partir de ce modèle et du contrat de synchronisation. Les migrations sont désormais versionnées dans supabase/migrations/ avec le Supabase CLI.
+Le schéma PostgreSQL physique V1 est désormais matérialisé dans `supabase/migrations/20261007193257_initial_schema_v1.sql`. La migration est versionnée dans Git ; son application et sa vérification sur le projet Supabase restent prévues à l'étape 7F.5.
 
 ## PostgreSQL
 
@@ -311,7 +311,7 @@ Money
 
 Par exemple, `54,32 EUR` est représenté conceptuellement par `5432 EUR`.
 
-Le type SQL exact (`BIGINT`, `NUMERIC`, ou autre représentation justifiée) reste à décider avec le schéma PostgreSQL définitif.
+Le stockage SQL V1 utilise `BIGINT` pour les minor units et `CHAR(3)` pour le code devise. Cette représentation reste exacte et cohérente avec le modèle offline-first. Les règles métier de devises et de précision restent ouvertes et sont suivies par l'Issue #20.
 
 ## Dates et temps
 
@@ -346,7 +346,7 @@ Les concepts suivants sont nécessaires au protocole V1 :
 - **Tombstone** côté serveur pour propager les suppressions ;
 - **MutationResult** côté serveur pour reconnaître les retries via le `mutation_id` et restituer un résultat déjà traité.
 
-Le schéma physique exact, les clés, index, contraintes et éventuelle séparation entre journal et tombstones restent à définir lors de l'implémentation du backend.
+Le schéma physique V1, les clés structurantes, les index initiaux et la séparation entre journal et tombstones sont matérialisés dans la migration initiale. Les contraintes métier complexes qui nécessitent encore une décision restent hors de cette migration et sont suivies par l'Issue #17.
 
 ## Versionnement
 
@@ -388,13 +388,13 @@ Les relations structurantes attendues incluent notamment :
 - `BudgetAllocation.budget_id → Budget.id` ;
 - `BudgetAllocation.category_id → Category.id`.
 
-La contrainte empêchant une sélection de budget d'utiliser une participation appartenant à un autre espace devra être garantie côté serveur et, autant que possible, par la structure SQL.
+La sélection d'un compte par un budget porte également le `space_id` et utilise des clés étrangères composites vers le budget et la participation : PostgreSQL garantit ainsi que les deux appartiennent au même espace.
 
 ## Suppressions et synchronisation
 
 Les entités synchronisables doivent rester identifiables après une suppression logique suffisamment longtemps pour permettre la propagation de la suppression aux autres clients.
 
-La stratégie exacte de tombstones, leur rétention et les contraintes SQL restent à définir dans le contrat de synchronisation.
+La migration V1 sépare les tombstones du journal et les rattache à une `server_revision`. Leur rétention, compactage et purge restent volontairement ouverts et sont suivis par l'Issue #14.
 
 ## Données sensibles
 
@@ -409,19 +409,32 @@ Aucune donnée financière réelle ne doit apparaître dans :
 - les logs ;
 - les autres artefacts du dépôt.
 
+## Décisions physiques V1
+
+- identifiants métier synchronisables : `uuid`, générables côté client ;
+- montants : `bigint` en minor units ;
+- devises : `char(3)` avec contrôle syntaxique ISO-like (`A-Z`), sans figer encore la taxonomie métier ;
+- timestamps techniques : `timestamptz` ; dates métier : `date` ;
+- version d'entité : `bigint`, initialisée à `1` ;
+- révision serveur : identité monotone dans `change_journal` ;
+- idempotence : clé primaire `(user_id, mutation_id)` dans `mutation_results` ;
+- suppressions : `tombstones` séparés du modèle métier ;
+- `BudgetAccountSelection` utilise une clé de contexte `space_id` et des FK composites pour empêcher les sélections inter-espaces ;
+- les tables du schéma `public` ont RLS activé comme défense en profondeur ; l'autorisation métier reste portée par Fastify et aucune politique client n'est introduite à ce stade.
+
 ## Non décidé
 
-- schéma SQL physique définitif ;
-- index définitifs ;
-- type SQL exact des montants ;
 - stratégie de rétention et d'audit ;
 - rôles et permissions détaillés ;
 - taxonomie définitive des catégories ;
 - protocole API détaillé ;
-- règles de conflit par type d'entité.
+- règles de conflit par type d'entité ;
+- invariants financiers complexes et éventuels triggers ;
+- règles métier de devises et précision ;
+- connexion runtime, pooling et rôle PostgreSQL.
 
 ## Outillage PostgreSQL V1
 
 Les migrations de schéma sont versionnées dans supabase/migrations/ et générées avec le Supabase CLI. Le runtime applicatif n'utilisera pas le CLI pour accéder aux données : l'API Fastify utilisera le driver PostgreSQL retenu séparément.
 
-Aucune table métier n'est créée par la mise en place de cet outillage.
+La migration initiale de schéma métier et de synchronisation est désormais versionnée dans ce répertoire. Elle n'est pas appliquée au projet distant pendant l'étape de conception ; l'application et la vérification réelle sont traitées séparément.
